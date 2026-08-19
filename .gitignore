@@ -1,0 +1,8 @@
+node_modules
+dist
+scratch
+coverage-survey.json
+backfilled.json
+*.local
+.DS_Store
+.firebase

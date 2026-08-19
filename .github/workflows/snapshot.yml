@@ -1,0 +1,68 @@
+name: Snapshot air quality and deploy
+
+# Takes a fresh snapshot of Udara Jakarta station data, rebuilds, and deploys.
+#
+# SCHEDULE CHOICE — half-hourly, matching the source's own update cadence.
+# This is ~48 runs/day. On a PUBLIC repository Actions minutes are unlimited, so
+# this is free. On a PRIVATE repository the free allowance is 2,000 minutes/month
+# and this schedule will exceed it.
+#
+# If this repo must stay private, change the cron below to hourly ('7 * * * *')
+# AND widen MAX_READING_AGE_HOURS in src/constants.js from 3 to 4. Both changes
+# are needed together: LCS stations already report up to 2h late, and an hourly
+# snapshot adds up to another hour on top, which lands exactly on a 3h gate and
+# would make Kemang fail intermittently.
+#
+# Offset from the top of the hour on purpose — GitHub's scheduled runners are
+# heavily contended at :00 and delays there are common.
+
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch: # manual trigger, for before a talk or rehearsal
+  push:
+    branches: [main]
+
+# Only deploy from the default branch of this repo. Pull requests — including
+# from forks on a public repo — never reach the deploy step and never see the
+# service account secret.
+concurrency:
+  group: snapshot-deploy
+  cancel-in-progress: false
+
+jobs:
+  snapshot-and-deploy:
+    runs-on: ubuntu-latest
+    if: github.repository_owner != '' && github.event_name != 'pull_request'
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      # If this step fails the workflow stops here: no build, no deploy, and the
+      # previously deployed snapshot keeps serving. A parse failure can never
+      # reach users.
+      - name: Snapshot Udara Jakarta
+        run: npm run snapshot
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: sky-sampler
