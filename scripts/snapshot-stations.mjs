@@ -254,6 +254,18 @@ async function main() {
 main().catch((err) => {
   const isKnown = err instanceof SnapshotError
   console.error(`\nSnapshot failed${isKnown ? '' : ' unexpectedly'}: ${err.message}`)
+  // `fetch failed` from undici is a wrapper — the real reason (DNS, TLS, a
+  // reset connection, a timeout) is nested in .cause, sometimes several levels
+  // deep. Surface all of it, because "fetch failed" alone gives no way to tell
+  // a transient network blip apart from something structural like the source
+  // blocking cloud/datacenter IP ranges.
+  let cause = err.cause
+  let depth = 0
+  while (cause && depth < 5) {
+    console.error(`  caused by: ${cause.code ? `[${cause.code}] ` : ''}${cause.message ?? cause}`)
+    cause = cause.cause
+    depth++
+  }
   if (existsSync(OUT_PATH)) {
     try {
       const prev = JSON.parse(readFileSync(OUT_PATH, 'utf8'))
