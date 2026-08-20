@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "node --test \"scripts/test/**/*.test.mjs\"",
+    "test": "node --test",
     "survey": "node scripts/survey-coverage.mjs",
     "deploy": "npm run snapshot && vite build && firebase deploy --only hosting",
     "snapshot": "node scripts/snapshot-stations.mjs"

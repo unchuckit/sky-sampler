@@ -61,7 +61,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22' # LTS. '20' triggered a deprecation warning and a silent fallback to whatever Node happened to be preinstalled on the runner.
           cache: 'npm'
 
       - name: Install dependencies
