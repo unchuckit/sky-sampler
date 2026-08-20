@@ -16,6 +16,7 @@ import {
   TIERS,
   confidenceBandFor,
 } from './constants.js'
+import { parseJakartaTimestamp } from './time.js'
 
 const EARTH_RADIUS_KM = 6371
 
@@ -91,8 +92,10 @@ export function computeNeighbourDeviations(stations) {
 export function readingAgeHours(station, now = new Date()) {
   const raw = station.lastSeen ?? station.apiTimestamp
   if (!raw) return Infinity // no timestamp = cannot prove freshness = treat as stale
-  const t = raw instanceof Date ? raw : new Date(raw)
-  if (Number.isNaN(t.getTime())) return Infinity
+  // Source timestamps are Jakarta-local with no offset; parsing them as the
+  // reader's local time would skew the age by the reader's UTC offset.
+  const t = raw instanceof Date ? raw : parseJakartaTimestamp(raw)
+  if (!t || Number.isNaN(t.getTime())) return Infinity
   return (now.getTime() - t.getTime()) / (1000 * 60 * 60)
 }
 

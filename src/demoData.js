@@ -6,50 +6,43 @@ import { geometryAdjustedHex, GEOMETRY_CORRECTION_MODEL } from './geometryCorrec
 
 // Fixtures for demo mode. Never written to or read from localStorage.
 //
-// Sampling areas here carry real station attachments from the Udara Jakarta
-// network, including one Tier B (LCS) entry — deliberate, so the presenter can
-// show that the app distinguishes a calibrated government instrument from a
-// low-cost sensor rather than treating all readings alike.
+// Sampling areas here carry real station attachments, measured from each
+// kawasan's own centroid against a live snapshot.
+//
+// NOTE: all three currently attach to Tier A stations, so demo mode no longer
+// shows the Tier A/B distinction. The only nearby kawasan whose nearest station
+// is an LCS unit is Mampang Prapatan (LCS-06 Taman Telur) or Pasar Minggu
+// (LCS-07). Swap one in if the talk needs to show that the app tells a
+// calibrated government instrument apart from a low-cost sensor.
 export const DEMO_LOCATIONS = [
   {
     id: 'demo-cilandak',
     label: 'Cilandak',
     stationUid: 'demo-dkj33',
     stationName: 'DKJ33 Lebak Bulus',
-    distanceKm: 1.3,
+    distanceKm: 1.1,
     confidenceBand: 'high',
     tier: TIERS.A,
-    coordinateSource: 'gps',
-    active: true,
-  },
-  {
-    id: 'demo-mampang',
-    label: 'Mampang Prapatan',
-    stationUid: 'demo-lcs06',
-    stationName: 'LCS-06 Taman Telur',
-    distanceKm: 1.2,
-    confidenceBand: 'high',
-    tier: TIERS.B,
-    coordinateSource: 'gps',
+    coordinateSource: 'district-centroid',
     active: true,
   },
   {
     id: 'demo-jagakarsa',
     label: 'Jagakarsa',
-    stationUid: 'demo-dki26',
-    stationName: 'DKI_PM25_26 Asrama Universitas Indonesia',
-    distanceKm: 7.2,
-    confidenceBand: 'moderate',
+    stationUid: 'demo-dki3',
+    stationName: 'DKI3 Jagakarsa',
+    distanceKm: 0.9,
+    confidenceBand: 'high',
     tier: TIERS.A,
-    coordinateSource: 'gps',
+    coordinateSource: 'district-centroid',
     active: true,
   },
   {
     id: 'demo-menteng',
     label: 'Menteng',
-    stationUid: 'demo-dki1',
-    stationName: 'DKI1 Bundaran HI',
-    distanceKm: 2.4,
+    stationUid: 'demo-dki38',
+    stationName: 'DKI_PM25_38 Taman Ismail Marzuki',
+    distanceKm: 0.7,
     confidenceBand: 'high',
     tier: TIERS.A,
     coordinateSource: 'district-centroid',
@@ -120,14 +113,14 @@ function seed({ id, pm25, hex, area, ago, notes, geometry }) {
   }
 }
 
-const [CILANDAK, MAMPANG, JAGAKARSA, MENTENG] = DEMO_LOCATIONS
+const [CILANDAK, JAGAKARSA, MENTENG] = DEMO_LOCATIONS
 
 export const DEMO_SAMPLES = [
   seed({
     id: 'demo-1',
     pm25: 78.4, // Heavy Haze
     hex: '#cfe4f1',
-    area: MAMPANG,
+    area: JAGAKARSA,
     ago: 2 * HOUR,
     notes: 'Thick haze, sun barely visible.',
     geometry: { compassHeading: 195, cameraElevation: 78, scatteringAngle: 88, sensorAvailable: true },
@@ -192,7 +185,7 @@ export const DEMO_SAMPLES = [
     id: 'demo-8',
     pm25: 4.1,
     hex: '#296a92',
-    area: MAMPANG,
+    area: MENTENG,
     ago: 11 * DAY,
     notes: 'Best sky of the month.',
     geometry: { compassHeading: 205, cameraElevation: 79, scatteringAngle: 83, sensorAvailable: true },

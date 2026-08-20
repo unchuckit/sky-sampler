@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { DEMO_ZONES } from './constants'
+import Toggle from './Toggle'
 
 const LONG_PRESS_MS = 500
 
@@ -22,20 +23,7 @@ function ControlPanel({ demo, onClose }) {
             <div className="text-sm">Demo mode</div>
             <div className="text-xs text-text-secondary">Mocked AQI, no network requests</div>
           </div>
-          <button
-            role="switch"
-            aria-checked={demo.active}
-            onClick={() => demo.toggle()}
-            className={`h-6 w-11 shrink-0 rounded-full transition-colors ${
-              demo.active ? 'bg-accent' : 'bg-border'
-            }`}
-          >
-            <span
-              className={`block h-5 w-5 translate-y-0.5 rounded-full bg-text transition-transform ${
-                demo.active ? 'translate-x-5' : 'translate-x-0.5'
-              }`}
-            />
-          </button>
+          <Toggle checked={demo.active} label="Demo mode" onChange={() => demo.toggle()} />
         </div>
 
         {demo.active && (
@@ -141,20 +129,7 @@ export function DemoSettingsRow({ demo }) {
         <div className="text-sm">Demo mode</div>
         <div className="text-xs text-text-secondary">Mocked AQI for presenting. No network requests.</div>
       </div>
-      <button
-        role="switch"
-        aria-checked={demo.active}
-        onClick={() => demo.toggle()}
-        className={`h-6 w-11 shrink-0 rounded-full transition-colors ${
-          demo.active ? 'bg-accent' : 'bg-border'
-        }`}
-      >
-        <span
-          className={`block h-5 w-5 translate-y-0.5 rounded-full bg-text transition-transform ${
-            demo.active ? 'translate-x-5' : 'translate-x-0.5'
-          }`}
-        />
-      </button>
+      <Toggle checked={demo.active} label="Demo mode" onChange={() => demo.toggle()} />
     </div>
   )
 }

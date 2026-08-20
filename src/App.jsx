@@ -148,6 +148,7 @@ export default function App() {
           aqi={aqi}
           log={log}
           stationsApi={stationsApi}
+          locationsApi={locationsApi}
           notifications={notifications}
           orientation={orientation}
           demo={demo}

@@ -19,6 +19,7 @@
 
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs'
 import { dirname } from 'node:path'
+import { toJakartaIso } from '../src/time.js'
 import { fileURLToPath } from 'node:url'
 
 const SOURCE_URL = 'https://udara.jakarta.go.id/'
@@ -177,7 +178,8 @@ function projectStation(s) {
     kota: s.kota ?? null,
     dominantMetric: s.dominantMetric ?? null,
     dominantRawValue: typeof s.dominantRawValue === 'number' ? s.dominantRawValue : null,
-    dominantMetricTime: s.dominantMetricTime ?? null,
+    // Pinned to +07:00 on the way in, so no reader has to guess.
+    dominantMetricTime: toJakartaIso(s.dominantMetricTime),
   }
 }
 
@@ -224,7 +226,8 @@ async function main() {
 
   const payload = {
     stations: usable.map(projectStation),
-    updateTime,
+    updateTime: toJakartaIso(updateTime),
+    updateTimeRaw: updateTime,
     cityMeteo,
     fetchedAt: new Date().toISOString(),
     source: 'Udara Jakarta — Dinas Lingkungan Hidup DKI Jakarta',

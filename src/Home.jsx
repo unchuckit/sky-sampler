@@ -8,6 +8,9 @@ import {
 } from './constants'
 import { ORIENTATION_STATE } from './useOrientation'
 import { DemoSettingsRow } from './DemoPill'
+import Toggle from './Toggle'
+import KawasanSelect, { findDistrict } from './KawasanSelect'
+import { COORDINATE_SOURCE } from './useLocations'
 
 function bandLabel(key) {
   return CONFIDENCE_BANDS.find((b) => b.key === key)?.label ?? 'Unknown confidence'
@@ -31,28 +34,101 @@ function AqiPill({ zone, aqi }) {
   )
 }
 
-function StationCard({ station, onManualEntry }) {
-  const [manualInput, setManualInput] = useState('')
-  const showManualEntry = (station.error || station.noCoverage) && !station.manual
+function IconButton({ label, onClick, tone = 'muted', children }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      className={`rounded p-1.5 ${tone === 'danger' ? 'text-zone-unhealthy' : 'text-text-secondary'}`}
+    >
+      {children}
+    </button>
+  )
+}
+
+function TrashIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V6" />
+      <path d="M10 11v6M14 11v6" />
+    </svg>
+  )
+}
+
+function MoreIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="12" cy="5" r="1.75" />
+      <circle cx="12" cy="12" r="1.75" />
+      <circle cx="12" cy="19" r="1.75" />
+    </svg>
+  )
+}
+
+/**
+ * One sampling area, with its current reading and its own management controls.
+ *
+ * Area management lives on the card rather than behind a separate screen: the
+ * thing you want to change is right next to the reading that prompted you to
+ * change it.
+ */
+function AreaCard({ station, area, districts, sampleCount, onReplace, onDelete }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [pendingKawasan, setPendingKawasan] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function applyReplace() {
+    const district = findDistrict(districts, pendingKawasan)
+    if (!district) return
+    if (
+      sampleCount > 0 &&
+      !window.confirm(
+        `Replace ${area?.label ?? 'this area'} with ${district.kecamatan}? ` +
+          `Its ${sampleCount} logged sample${sampleCount === 1 ? '' : 's'} keep the station and AQI ` +
+          'recorded at capture time.',
+      )
+    ) {
+      return
+    }
+    setBusy(true)
+    await onReplace(area, district)
+    setBusy(false)
+    setMenuOpen(false)
+    setPendingKawasan('')
+  }
 
   return (
     <div className="rounded-lg border border-border bg-surface p-3">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-sm text-text-secondary">{station.label}</span>
+      <div className="flex items-start justify-between gap-2">
+        <span className="min-w-0 flex-1 truncate text-sm text-text-secondary">{station.label}</span>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <IconButton
+            label={`${sampleCount > 0 ? 'Retire' : 'Remove'} ${station.label}`}
+            tone="danger"
+            onClick={() => onDelete(area, sampleCount)}
+          >
+            <TrashIcon />
+          </IconButton>
+          <IconButton label={`Options for ${station.label}`} onClick={() => setMenuOpen((v) => !v)}>
+            <MoreIcon />
+          </IconButton>
+        </div>
+      </div>
+
+      <div className="mt-1 flex items-center gap-2">
+        <span className="font-mono-data text-3xl font-bold">
+          {typeof station.aqi === 'number' ? station.aqi : '—'}
+        </span>
         <AqiPill zone={station.zone} aqi={station.aqi} />
       </div>
-      <div className="mt-1 font-mono-data text-3xl font-bold">
-        {typeof station.aqi === 'number' ? station.aqi : '—'}
-      </div>
+
       {typeof station.aqi === 'number' && (
         <div className="mt-0.5 text-xs text-text-secondary">
-          {station.manual ? 'Entered manually' : station.stationName ?? 'Unknown station'}
-          {station.pm25 != null && (
-            <span className="font-mono-data"> · {station.pm25} µg/m³</span>
-          )}
+          {station.stationName ?? 'Unknown station'}
+          {station.pm25 != null && <span className="font-mono-data"> · {station.pm25} µg/m³</span>}
         </div>
       )}
-      {typeof station.aqi === 'number' && !station.manual && station.stationSelection?.distanceKm != null && (
+      {typeof station.aqi === 'number' && station.stationSelection?.distanceKm != null && (
         <div className="mt-0.5 font-mono-data text-[11px] text-text-secondary">
           {station.stationSelection.distanceKm}km · Tier {station.stationSelection.tier} ·{' '}
           {bandLabel(station.stationSelection.confidenceBand)}
@@ -63,26 +139,38 @@ function StationCard({ station, onManualEntry }) {
           No monitoring station within {MAX_STATION_RADIUS_KM}km. Samples here log without AQI.
         </div>
       )}
-      {showManualEntry && (
-        <div className="mt-2 flex items-center gap-2">
-          <span className="text-xs text-text-secondary">AQI unavailable —</span>
-          <input
-            type="number"
-            inputMode="numeric"
-            value={manualInput}
-            onChange={(e) => setManualInput(e.target.value)}
-            placeholder="enter AQI"
-            className="w-20 rounded border border-border bg-bg px-2 py-1 font-mono-data text-xs text-text"
-          />
-          <button
-            className="text-xs text-accent"
-            onClick={() => {
-              const n = Number(manualInput)
-              if (!Number.isNaN(n) && manualInput !== '') onManualEntry(station.id, n)
-            }}
-          >
-            set
-          </button>
+
+      {menuOpen && (
+        <div className="mt-3 rounded-lg border border-border bg-bg p-3">
+          <label className="text-xs text-text-secondary" htmlFor={`kawasan-${station.id}`}>
+            Replace with another kawasan
+          </label>
+          <div className="mt-1.5">
+            <KawasanSelect
+              id={`kawasan-${station.id}`}
+              districts={districts}
+              value={pendingKawasan}
+              onChange={setPendingKawasan}
+            />
+          </div>
+          <div className="mt-3 flex items-center gap-3">
+            <button
+              disabled={!pendingKawasan || busy}
+              onClick={applyReplace}
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black disabled:opacity-40"
+            >
+              {busy ? 'Replacing…' : 'Replace'}
+            </button>
+            <button
+              onClick={() => {
+                setMenuOpen(false)
+                setPendingKawasan('')
+              }}
+              className="text-sm text-text-secondary"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -110,25 +198,16 @@ function SettingsPanel({ notifications, demo, display, onClose }) {
               Notify when AQI drops to 50 or below, 10:00–14:00
             </div>
           </div>
-          <button
-            role="switch"
-            aria-checked={notifications.enabled}
-            onClick={() => {
+          <Toggle
+            checked={notifications.enabled}
+            label="AQI alerts"
+            onChange={() => {
               if (notifications.permission !== 'granted') {
                 notifications.requestPermission()
               }
               notifications.toggleEnabled()
             }}
-            className={`h-6 w-11 shrink-0 rounded-full transition-colors ${
-              notifications.enabled ? 'bg-accent' : 'bg-border'
-            }`}
-          >
-            <span
-              className={`block h-5 w-5 translate-y-0.5 rounded-full bg-text transition-transform ${
-                notifications.enabled ? 'translate-x-5' : 'translate-x-0.5'
-              }`}
-            />
-          </button>
+          />
         </div>
 
         {notifications.permission === 'denied' && (
@@ -144,20 +223,11 @@ function SettingsPanel({ notifications, demo, display, onClose }) {
               Shows area and station only. Useful when the log is on a projector.
             </div>
           </div>
-          <button
-            role="switch"
-            aria-checked={display.maskSubLocations}
-            onClick={() => display.toggle('maskSubLocations')}
-            className={`h-6 w-11 shrink-0 rounded-full transition-colors ${
-              display.maskSubLocations ? 'bg-accent' : 'bg-border'
-            }`}
-          >
-            <span
-              className={`block h-5 w-5 translate-y-0.5 rounded-full bg-text transition-transform ${
-                display.maskSubLocations ? 'translate-x-5' : 'translate-x-0.5'
-              }`}
-            />
-          </button>
+          <Toggle
+            checked={display.maskSubLocations}
+            label="Hide sub-locations"
+            onChange={() => display.toggle('maskSubLocations')}
+          />
         </div>
 
         <DemoSettingsRow demo={demo} />
@@ -170,6 +240,7 @@ export default function Home({
   aqi,
   log,
   stationsApi,
+  locationsApi,
   notifications,
   orientation,
   demo,
@@ -184,6 +255,53 @@ export default function Home({
   const [now, setNow] = useState(new Date())
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [notifPromptDismissed, setNotifPromptDismissed] = useState(false)
+  const [addingArea, setAddingArea] = useState(false)
+  const [newKawasan, setNewKawasan] = useState('')
+
+  // Resolving a kawasan uses its centroid, which is then discarded — no
+  // coordinates are returned from here or written anywhere.
+  function resolveKawasan(district) {
+    const result = aqi.checkCoverage(district.lat, district.lng)
+    const band = result?.selection?.confidenceBand ?? null
+    return {
+      stationUid: result?.chosen?.uid ?? null,
+      stationName: result?.chosen?.name ?? null,
+      distanceKm: result?.selection?.distanceKm ?? null,
+      // A centroid's own error is easily a kilometre, so it can never claim high.
+      confidenceBand: band === 'high' ? 'moderate' : band,
+      tier: result?.chosen?.tier ?? null,
+      coordinateSource: COORDINATE_SOURCE.DISTRICT_CENTROID,
+    }
+  }
+
+  function handleAddArea() {
+    const district = findDistrict(stationsApi?.districts ?? [], newKawasan)
+    if (!district) return
+    locationsApi.addLocation({ label: district.kecamatan, ...resolveKawasan(district) })
+    setAddingArea(false)
+    setNewKawasan('')
+  }
+
+  // Replacing repoints the area. Logged samples are unaffected: each one stored
+  // its own station, AQI and location label at capture time.
+  function handleReplaceArea(area, district) {
+    if (!area) return
+    locationsApi.renameLocation(area.id, district.kecamatan)
+    locationsApi.rebindLocation(area.id, resolveKawasan(district))
+  }
+
+  function handleDeleteArea(area, sampleCount) {
+    if (!area) return
+    const message =
+      sampleCount > 0
+        ? `Retire ${area.label}? Its ${sampleCount} logged sample${sampleCount === 1 ? '' : 's'} stay in the log.`
+        : `Remove ${area.label}?`
+    if (window.confirm(message)) {
+      // Retire rather than delete when samples exist — a logged sample must
+      // never be orphaned from the place it was taken.
+      locationsApi.removeLocation(area.id, { hasSamples: sampleCount > 0 })
+    }
+  }
 
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 60 * 1000)
@@ -246,9 +364,6 @@ export default function Home({
         <div className="flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             <h2 className="text-sm font-medium text-text-secondary">Live AQI</h2>
-            <button className="text-xs text-accent" onClick={onOpenLocations}>
-              Areas
-            </button>
           </div>
           <div className="text-right">
             <div className="font-mono-data text-xs text-text-secondary">
@@ -271,14 +386,64 @@ export default function Home({
         <div className="mt-2 grid grid-cols-1 gap-2">
           {aqi.stations.length === 0 ? (
             <div className="rounded-lg border border-border bg-surface p-4 text-sm text-text-secondary">
-              No sampling areas yet.{' '}
-              <button className="text-accent underline" onClick={onOpenLocations}>
-                Add one
-              </button>{' '}
-              to see live readings.
+              No sampling areas yet. Add one to see live readings.
             </div>
           ) : (
-            aqi.stations.map((station) => <StationCard key={station.id} station={station} />)
+            aqi.stations.map((station) => (
+              <AreaCard
+                key={station.id}
+                station={station}
+                area={locationsApi.getLocationById(station.id)}
+                districts={stationsApi?.districts ?? []}
+                sampleCount={log.samples.filter((s) => s.locationId === station.id).length}
+                onReplace={handleReplaceArea}
+                onDelete={handleDeleteArea}
+              />
+            ))
+          )}
+
+          {addingArea ? (
+            <div className="rounded-lg border border-accent/40 bg-surface p-3">
+              <label className="text-xs text-text-secondary" htmlFor="add-kawasan">
+                Add a kawasan
+              </label>
+              <div className="mt-1.5">
+                <KawasanSelect
+                  id="add-kawasan"
+                  districts={stationsApi?.districts ?? []}
+                  value={newKawasan}
+                  onChange={setNewKawasan}
+                />
+              </div>
+              <div className="mt-3 flex items-center gap-3">
+                <button
+                  disabled={!newKawasan}
+                  onClick={handleAddArea}
+                  className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black disabled:opacity-40"
+                >
+                  Add area
+                </button>
+                <button
+                  onClick={() => {
+                    setAddingArea(false)
+                    setNewKawasan('')
+                  }}
+                  className="text-sm text-text-secondary"
+                >
+                  Cancel
+                </button>
+              </div>
+              <button onClick={onOpenLocations} className="mt-3 block text-xs text-accent">
+                More options — use my location, rename, restore retired
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setAddingArea(true)}
+              className="rounded-lg border border-dashed border-border py-3 text-sm text-text-secondary"
+            >
+              + Add area
+            </button>
           )}
         </div>
 
