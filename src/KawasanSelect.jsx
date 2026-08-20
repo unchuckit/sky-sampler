@@ -9,7 +9,7 @@ import { useMemo } from 'react'
  * provenance. It also stays current as DKI adds or retires stations, with no
  * code change.
  */
-export default function KawasanSelect({ districts, value, onChange, id }) {
+export default function KawasanSelect({ districts, value, onChange, id, placeholder = 'Select a kawasan…' }) {
   const byKota = useMemo(() => {
     const groups = new Map()
     for (const d of districts) {
@@ -34,7 +34,7 @@ export default function KawasanSelect({ districts, value, onChange, id }) {
       onChange={(e) => onChange(e.target.value)}
       className="w-full rounded border border-border bg-bg px-3 py-2 text-sm"
     >
-      <option value="">Select a kawasan…</option>
+      <option value="">{placeholder}</option>
       {byKota.map(([kota, list]) => (
         <optgroup key={kota} label={kota}>
           {list.map((d) => (

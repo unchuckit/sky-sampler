@@ -140,13 +140,13 @@ export function geometryWarnings(geometry) {
   if (geometry.scatteringAngle != null && geometry.scatteringAngle < WARN_SCATTERING_BELOW) {
     warnings.push({
       key: 'near-sun',
-      text: 'Pointing near the sun — this reads paler than the sky’s true colour.',
+      text: 'Too close to the sun',
     })
   }
   if (geometry.cameraElevation != null && geometry.cameraElevation < WARN_ELEVATION_BELOW) {
     warnings.push({
       key: 'low-angle',
-      text: 'Low angle — horizon sky reads paler. Aim higher for a comparable sample.',
+      text: 'Aim higher',
     })
   }
   return warnings

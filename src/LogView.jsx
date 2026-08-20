@@ -57,6 +57,7 @@ function formatEntry(sample, { maskSubLocations = false } = {}) {
     `PM2.5 raw: ${sample.pm25 != null ? `${sample.pm25} ug/m3` : 'n/a'}`,
     `Station: ${sample.stationName ?? 'n/a'}${sel?.distanceKm != null ? ` (${sel.distanceKm}km, Tier ${sel.tier}, ${sel.confidenceBand ?? 'n/a'})` : ''}`,
     `Provenance: ${sample.provenance ?? 'n/a'}`,
+    `Snapshot age at capture: ${sample.snapshotAgeMinutes != null ? `${sample.snapshotAgeMinutes} min` : 'n/a'}`,
     `Averaged hex: ${sample.averagedHex}`,
     `Averaged hex (linear): ${sample.averagedHexLinear ?? 'n/a'}`,
     `Averaged hex (geometry-adjusted, provisional): ${sample.averagedHexGeometryAdjusted ?? 'n/a'}`,

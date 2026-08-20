@@ -123,6 +123,7 @@ export default function CaptureFlow({
   locations,
   orientation,
   initialLocationId,
+  demo,
   onCancel,
   onComplete,
 }) {
@@ -147,6 +148,7 @@ export default function CaptureFlow({
   // recomputed per frame — and is never written anywhere on save.
   const [skyGeometry, setSkyGeometry] = useState(null)
   const [geoError, setGeoError] = useState(null)
+  const [liveGeometry, setLiveGeometry] = useState(null)
   const positionRef = useRef(null)
 
   const videoRef = useRef(null)
@@ -161,7 +163,9 @@ export default function CaptureFlow({
     [aqiStations, locationId],
   )
 
-  const ideal = isIdealWindow()
+  // Demo's zone times are curated to always sit inside the sampling window —
+  // see the equivalent note in Home.jsx.
+  const ideal = demo?.active ? true : isIdealWindow()
 
   useEffect(() => {
     return () => {
@@ -177,12 +181,21 @@ export default function CaptureFlow({
     }
   }, [])
 
-  const warnings = useMemo(() => geometryWarnings(skyGeometry), [skyGeometry])
   const compliant = useMemo(() => isGeometryCompliant(skyGeometry), [skyGeometry])
 
   async function openCamera() {
     setCameraError(null)
     setStep('camera')
+    // Kicked off alongside the camera, not lazily at capture time, so the live
+    // geometry readout has a coordinate to compute a scattering angle against
+    // while the person is still framing the shot.
+    if (!positionRef.current) {
+      getCurrentPosition()
+        .then((position) => {
+          positionRef.current = position
+        })
+        .catch((err) => setGeoError(err.message))
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       streamRef.current = stream
@@ -194,6 +207,37 @@ export default function CaptureFlow({
       setCameraError('Camera access denied — enable in Settings to capture.')
     }
   }
+
+  const { getReading } = orientation
+
+  // Live sky-geometry readout while framing, so a non-compliant shot is
+  // apparent before the shutter fires rather than discovered afterwards.
+  // Polled on an interval rather than reacting to the orientation hook's own
+  // `reading` state, which updates on every deviceorientation event — often
+  // 60+ times a second — and would otherwise re-render at that rate instead of
+  // the ~10/s this is throttled to.
+  useEffect(() => {
+    if (step !== 'camera' || cameraError) {
+      setLiveGeometry(null)
+      return
+    }
+    const id = setInterval(() => {
+      const reading = getReading()
+      const position = positionRef.current
+      setLiveGeometry(
+        computeSkyGeometry({
+          heading: reading.heading,
+          beta: reading.beta,
+          lat: position?.lat,
+          lng: position?.lng,
+          date: new Date(),
+        }),
+      )
+    }, 100)
+    return () => clearInterval(id)
+  }, [step, cameraError, getReading])
+
+  const liveWarning = useMemo(() => geometryWarnings(liveGeometry)[0] ?? null, [liveGeometry])
 
   /**
    * Read heading + tilt at the instant of capture and combine with solar
@@ -544,6 +588,22 @@ export default function CaptureFlow({
                       ))}
                     </div>
                   )}
+                  {/* Live, not after-the-fact: lets the person adjust aim before
+                      shooting instead of finding out afterwards. No sensors, no
+                      readout — never zeros or "unknown" in their place. */}
+                  {liveGeometry?.sensorAvailable && liveGeometry.scatteringAngle != null && (
+                    <div className="pointer-events-none absolute inset-x-0 bottom-24 flex justify-center">
+                      <span
+                        className={`rounded bg-black/50 px-2.5 py-1 font-mono-data text-xs ${
+                          liveWarning ? 'text-zone-moderate' : 'text-white'
+                        }`}
+                      >
+                        {liveWarning
+                          ? liveWarning.text
+                          : `${liveGeometry.scatteringAngle}° from sun · ${liveGeometry.cameraElevation}° up`}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div className="border-t border-border bg-surface px-4 py-2 text-center text-xs text-text-secondary">
                   Smart HDR off? Check Settings → Camera before capturing.
@@ -604,11 +664,6 @@ export default function CaptureFlow({
                     {compliant ? '✓ comparable' : 'outside band'}
                   </span>
                 </div>
-                {warnings.map((w) => (
-                  <p key={w.key} className="mt-2 text-xs text-zone-moderate">
-                    {w.text}
-                  </p>
-                ))}
               </div>
             )}
             {geoError && (

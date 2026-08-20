@@ -1,4 +1,4 @@
-import { PROVENANCE, TIERS } from './constants'
+import { PROVENANCE, TIERS, demoClockFor } from './constants'
 import { averageHexNaive, averageHexLinear } from './colour'
 import { pm25ToAqi } from './aqi'
 import { isGeometryCompliant } from './sunGeometry'
@@ -55,8 +55,6 @@ export const DEMO_LOCATIONS = [
   },
 ]
 
-// Timestamps are generated relative to now — "2 hours ago", "yesterday" — so the
-// projected log never shows stale dates and needs no editing before a run.
 const MINUTE = 60 * 1000
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
@@ -70,9 +68,13 @@ function jitterHex(hex, n) {
   return '#' + [r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('')
 }
 
-function seed({ id, pm25, hex, area, ago, notes, geometry }) {
+// Timestamps are pinned to the seeded sample's own zone moment, minus a spread
+// so the log reads with some depth, rather than to real wall-clock time — a
+// seeded sample must never appear to have been recorded in the future relative
+// to the demo clock the presenter is currently standing on. See demoClockFor.
+function seed({ id, pm25, hex, area, zoneKey, agoMs = 0, notes, geometry }) {
   const taps = [jitterHex(hex, -4), jitterHex(hex, 2), hex, jitterHex(hex, -2), jitterHex(hex, 3)]
-  const createdAt = new Date(Date.now() - ago).toISOString()
+  const createdAt = new Date(demoClockFor(zoneKey).getTime() - agoMs).toISOString()
   const aqi = pm25ToAqi(pm25)
   const linear = averageHexLinear(taps)
 
@@ -98,6 +100,10 @@ function seed({ id, pm25, hex, area, ago, notes, geometry }) {
     stationName: area.stationName,
     stationUid: area.stationUid,
     apiTimestamp: createdAt,
+    // The demo AQI is synthesised fresh for whichever zone is selected, so
+    // there is no real snapshot age to report — 0 is the honest value, not a
+    // placeholder.
+    snapshotAgeMinutes: 0,
     provenance: PROVENANCE.VERIFIED,
     confidenceBand: area.confidenceBand,
     stationSelection: {
@@ -120,79 +126,52 @@ function seed({ id, pm25, hex, area, ago, notes, geometry }) {
 
 const [MAMPANG, JAGAKARSA, MENTENG] = DEMO_LOCATIONS
 
+// Exactly one seeded sample per demo zone — one open slot left in each, so
+// that capturing live in each zone during a run (the DEMO pill's whole point)
+// visibly adds to a log that isn't already full, rather than landing in a
+// list that already reads as complete. A full run — one live capture per
+// zone — brings every zone to two samples and the log to SAMPLE_GOAL (8).
 export const DEMO_SAMPLES = [
-  seed({
-    id: 'demo-1',
-    pm25: 78.4, // Heavy Haze
-    hex: '#cfe4f1',
-    area: JAGAKARSA,
-    ago: 2 * HOUR,
-    notes: 'Thick haze, sun barely visible.',
-    geometry: { compassHeading: 195, cameraElevation: 78, scatteringAngle: 88, sensorAvailable: true },
-  }),
-  seed({
-    id: 'demo-2',
-    pm25: 52.1,
-    hex: '#bcd9ec',
-    area: JAGAKARSA,
-    ago: 6 * HOUR,
-    notes: 'Grey haze, no clouds.',
-    geometry: { compassHeading: 140, cameraElevation: 66, scatteringAngle: 74, sensorAvailable: true },
-  }),
   // Deliberately non-compliant: 28° from the sun, so the compliance flag is
-  // visible on the projector rather than theoretical.
+  // visible on the projector rather than theoretical. Also the Tier B example.
   seed({
-    id: 'demo-3',
+    id: 'demo-heavy-haze',
     pm25: 35.9,
     hex: '#82b9dc',
     area: MAMPANG,
-    ago: 1 * DAY + 3 * HOUR,
+    zoneKey: 'heavy-haze',
+    agoMs: 1 * DAY,
     notes: 'Shot toward the sun — kept as a counter-example.',
     geometry: { compassHeading: 92, cameraElevation: 52, scatteringAngle: 28, sensorAvailable: true },
   }),
   seed({
-    id: 'demo-4',
+    id: 'demo-typical',
     pm25: 30.2,
     hex: '#95c4e1',
     area: MENTENG,
-    ago: 2 * DAY,
+    zoneKey: 'typical-jakarta',
+    agoMs: 2 * DAY,
     notes: '',
     geometry: { compassHeading: 210, cameraElevation: 71, scatteringAngle: 96, sensorAvailable: true },
   }),
   seed({
-    id: 'demo-5',
-    pm25: 18.4, // Good Day
-    hex: '#4999cb',
-    area: MAMPANG,
-    ago: 3 * DAY + 5 * HOUR,
-    notes: 'Some scattered cloud at the horizon.',
-    geometry: { compassHeading: 175, cameraElevation: 82, scatteringAngle: 104, sensorAvailable: true },
-  }),
-  seed({
-    id: 'demo-6',
+    id: 'demo-good-day',
     pm25: 13.8,
     hex: '#5ca4d1',
     area: JAGAKARSA,
-    ago: 5 * DAY,
+    zoneKey: 'good-day',
+    agoMs: 5 * DAY,
     notes: 'Clear, light breeze.',
     geometry: { compassHeading: 160, cameraElevation: 88, scatteringAngle: 91, sensorAvailable: true },
   }),
   seed({
-    id: 'demo-7',
-    pm25: 6.2, // Aspirational
+    id: 'demo-aspirational',
+    pm25: 6.2,
     hex: '#27658c',
     area: MENTENG,
-    ago: 8 * DAY,
+    zoneKey: 'aspirational',
+    agoMs: 8 * DAY,
     notes: 'Deep clear blue, no haze at all.',
     geometry: { compassHeading: 188, cameraElevation: 86, scatteringAngle: 97, sensorAvailable: true },
-  }),
-  seed({
-    id: 'demo-8',
-    pm25: 4.1,
-    hex: '#296a92',
-    area: MENTENG,
-    ago: 11 * DAY,
-    notes: 'Best sky of the month.',
-    geometry: { compassHeading: 205, cameraElevation: 79, scatteringAngle: 83, sensorAvailable: true },
   }),
 ]

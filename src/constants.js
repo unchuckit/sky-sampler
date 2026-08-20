@@ -183,6 +183,26 @@ export const DEMO_ZONES = {
 // It follows the disc: lightest sky to heaviest haze.
 export const DEMO_ZONE_ORDER = ['aspirational', 'good-day', 'typical-jakarta', 'heavy-haze']
 
+// One fixed time-of-day per zone, always applied to today's date. Advancing
+// zones advances the clock, so the four zones read as one day's progression
+// rather than four unrelated states. Never a hardcoded date — a stale date on
+// a projector is exactly what this guards against — only the hour and minute
+// are fixed.
+export const DEMO_ZONE_TIMES = {
+  aspirational: { hour: 10, minute: 45 },
+  'good-day': { hour: 12, minute: 2 },
+  'typical-jakarta': { hour: 13, minute: 18 },
+  'heavy-haze': { hour: 14, minute: 0 },
+}
+
+export function demoClockFor(zoneKey, base = new Date()) {
+  const t = DEMO_ZONE_TIMES[zoneKey]
+  if (!t) return null
+  const d = new Date(base)
+  d.setHours(t.hour, t.minute, 0, 0)
+  return d
+}
+
 export const IDEAL_WINDOW = { start: 10, end: 14 } // 10:00–14:00
 
 export function isIdealWindow(date = new Date()) {
@@ -197,10 +217,10 @@ export function nextIdealWindowLabel(date = new Date()) {
 }
 
 // Snapshot staleness — the second clock, independent of per-station freshness.
-// Under 90 minutes: say nothing. 90 minutes to 6 hours: show the age. Over 6
-// hours: treat the data as unavailable rather than serving a many-hours-old
-// reading as though it were current.
-export const SNAPSHOT_STALE_MINUTES = 90
+// Routine staleness is never shown; only the far end matters. Past 6 hours,
+// treat the data as unavailable rather than serving a many-hours-old reading
+// as though it were current — area cards show "No current reading" instead of
+// a number, and captures still save, with provenance 'no-coverage'.
 export const SNAPSHOT_UNUSABLE_HOURS = 6
 
 // Instrument ceilings. A station reporting exactly one of these is far more

@@ -5,7 +5,7 @@ function bandLabel(key) {
   return CONFIDENCE_BANDS.find((b) => b.key === key)?.label ?? 'Unknown confidence'
 }
 
-export default function SaveEntry({ draft, aqiStations, locations, onSave, onCancel }) {
+export default function SaveEntry({ draft, aqiStations, locations, demo, snapshotAgeMinutes, onSave, onCancel }) {
   const [locationId, setLocationId] = useState(draft.locationId)
   const [subLocation, setSubLocation] = useState(draft.subLocation || '')
   const [editingLocation, setEditingLocation] = useState(false)
@@ -14,7 +14,10 @@ export default function SaveEntry({ draft, aqiStations, locations, onSave, onCan
   const [notes, setNotes] = useState('')
   const [showAllFrames, setShowAllFrames] = useState(false)
 
-  const now = new Date()
+  // A capture during a demo stamps with the demo clock, not the wall clock, so
+  // a live capture in the Aspirational zone reads 10:45 AM regardless of when
+  // the talk is actually happening.
+  const now = demo?.active && demo.demoNow ? demo.demoNow : new Date()
   const location = locations.find((l) => l.id === locationId)
   const hasFrames = draft.frames && draft.frames.length > 0
   const selectedFrame = hasFrames ? draft.frames[draft.selectedFrameIndex] : null
@@ -64,6 +67,10 @@ export default function SaveEntry({ draft, aqiStations, locations, onSave, onCan
       location: location?.label ?? 'Unknown',
       locationId,
       subLocation,
+      createdAt: now.toISOString(),
+      // How old the AQI snapshot was at the moment of capture. Never shown,
+      // but kept for provenance — see constants.js.
+      snapshotAgeMinutes: snapshotAgeMinutes ?? null,
       aqi: effectiveAqi,
       stationName: usedManualEntry ? null : boundAqi?.stationName ?? null,
       stationUid: usedManualEntry ? null : boundAqi?.stationUid ?? null,

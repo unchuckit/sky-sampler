@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { TIERS, SNAPSHOT_STALE_MINUTES, SNAPSHOT_UNUSABLE_HOURS } from './constants'
+import { TIERS, SNAPSHOT_UNUSABLE_HOURS } from './constants'
 import { pm25ToAqi } from './aqi'
 import { computeNeighbourDeviations } from './stationSelection'
 
@@ -100,16 +100,6 @@ export function useStations({ enabled = true } = {}) {
   const snapshotUnusable =
     snapshotAgeMinutes != null && snapshotAgeMinutes > SNAPSHOT_UNUSABLE_HOURS * 60
 
-  const showSnapshotAge =
-    snapshotAgeMinutes != null && snapshotAgeMinutes >= SNAPSHOT_STALE_MINUTES && !snapshotUnusable
-
-  const snapshotAgeLabel = useMemo(() => {
-    if (snapshotAgeMinutes == null) return null
-    if (snapshotAgeMinutes < 90) return null
-    const hours = Math.round(snapshotAgeMinutes / 60)
-    return `Air quality data from ${hours} hour${hours === 1 ? '' : 's'} ago`
-  }, [snapshotAgeMinutes])
-
   // Districts for the "pick a district" path, deduplicated across the snapshot
   // and grouped by kota so the list is scannable.
   const districts = useMemo(() => {
@@ -149,8 +139,6 @@ export function useStations({ enabled = true } = {}) {
     reload: load,
     snapshot,
     snapshotAgeMinutes,
-    snapshotAgeLabel,
-    showSnapshotAge,
     snapshotUnusable,
     updateTime: snapshot?.updateTime ?? null,
     cityMeteo: snapshot?.cityMeteo ?? null,

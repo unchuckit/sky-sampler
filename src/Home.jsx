@@ -34,13 +34,9 @@ function AqiPill({ zone, aqi }) {
   )
 }
 
-function IconButton({ label, onClick, tone = 'muted', children }) {
+function IconButton({ label, onClick, children }) {
   return (
-    <button
-      onClick={onClick}
-      aria-label={label}
-      className={`rounded p-1.5 ${tone === 'danger' ? 'text-zone-unhealthy' : 'text-text-secondary'}`}
-    >
+    <button onClick={onClick} aria-label={label} className="rounded p-1.5 text-text-secondary">
       {children}
     </button>
   )
@@ -70,12 +66,17 @@ function MoreIcon() {
  *
  * Area management lives on the card rather than behind a separate screen: the
  * thing you want to change is right next to the reading that prompted you to
- * change it.
+ * change it. Collapsed by default — only the three-dot button shows — so the
+ * card reads as a reading first and a settings surface second. Expansion state
+ * is owned by the parent so only one card is ever open at a time.
  */
-function AreaCard({ station, area, districts, sampleCount, onReplace, onDelete }) {
-  const [menuOpen, setMenuOpen] = useState(false)
+function AreaCard({ station, area, districts, sampleCount, expanded, onToggleExpand, onReplace, onDelete }) {
   const [pendingKawasan, setPendingKawasan] = useState('')
   const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (!expanded) setPendingKawasan('')
+  }, [expanded])
 
   async function applyReplace() {
     const district = findDistrict(districts, pendingKawasan)
@@ -93,84 +94,90 @@ function AreaCard({ station, area, districts, sampleCount, onReplace, onDelete }
     setBusy(true)
     await onReplace(area, district)
     setBusy(false)
-    setMenuOpen(false)
-    setPendingKawasan('')
+    onToggleExpand()
   }
 
   return (
     <div className="rounded-lg border border-border bg-surface p-3">
       <div className="flex items-start justify-between gap-2">
-        <span className="min-w-0 flex-1 truncate text-sm text-text-secondary">{station.label}</span>
+        <div className="min-w-0 flex-1">
+          {expanded ? (
+            <>
+              <label className="text-xs text-text-secondary" htmlFor={`kawasan-${station.id}`}>
+                Replace with another area
+              </label>
+              <div className="mt-1.5">
+                <KawasanSelect
+                  id={`kawasan-${station.id}`}
+                  districts={districts}
+                  value={pendingKawasan}
+                  onChange={setPendingKawasan}
+                  placeholder="Select"
+                />
+              </div>
+            </>
+          ) : (
+            <span className="block truncate text-sm text-text-secondary">{station.label}</span>
+          )}
+        </div>
         <div className="flex shrink-0 items-center gap-0.5">
-          <IconButton
-            label={`${sampleCount > 0 ? 'Retire' : 'Remove'} ${station.label}`}
-            tone="danger"
-            onClick={() => onDelete(area, sampleCount)}
-          >
-            <TrashIcon />
-          </IconButton>
-          <IconButton label={`Options for ${station.label}`} onClick={() => setMenuOpen((v) => !v)}>
+          {expanded && (
+            <IconButton
+              label={`${sampleCount > 0 ? 'Retire' : 'Remove'} ${station.label}`}
+              onClick={() => onDelete(area, sampleCount)}
+            >
+              <TrashIcon />
+            </IconButton>
+          )}
+          <IconButton label={`Options for ${station.label}`} onClick={onToggleExpand}>
             <MoreIcon />
           </IconButton>
         </div>
       </div>
 
-      <div className="mt-1 flex items-center gap-2">
-        <span className="font-mono-data text-3xl font-bold">
-          {typeof station.aqi === 'number' ? station.aqi : '—'}
-        </span>
-        <AqiPill zone={station.zone} aqi={station.aqi} />
-      </div>
-
-      {typeof station.aqi === 'number' && (
-        <div className="mt-0.5 text-xs text-text-secondary">
-          {station.stationName ?? 'Unknown station'}
-          {station.pm25 != null && <span className="font-mono-data"> · {station.pm25} µg/m³</span>}
-        </div>
-      )}
-      {typeof station.aqi === 'number' && station.stationSelection?.distanceKm != null && (
-        <div className="mt-0.5 font-mono-data text-[11px] text-text-secondary">
-          {station.stationSelection.distanceKm}km · Tier {station.stationSelection.tier} ·{' '}
-          {bandLabel(station.stationSelection.confidenceBand)}
-        </div>
-      )}
-      {station.noCoverage && (
-        <div className="mt-1 text-xs text-zone-moderate">
-          No monitoring station within {MAX_STATION_RADIUS_KM}km. Samples here log without AQI.
-        </div>
-      )}
-
-      {menuOpen && (
-        <div className="mt-3 rounded-lg border border-border bg-bg p-3">
-          <label className="text-xs text-text-secondary" htmlFor={`kawasan-${station.id}`}>
-            Replace with another kawasan
-          </label>
-          <div className="mt-1.5">
-            <KawasanSelect
-              id={`kawasan-${station.id}`}
-              districts={districts}
-              value={pendingKawasan}
-              onChange={setPendingKawasan}
-            />
+      {station.snapshotUnusable ? (
+        <div className="mt-1 text-sm text-text-secondary">No current reading</div>
+      ) : (
+        <>
+          <div className="mt-1 flex items-center gap-2">
+            <span className="font-mono-data text-3xl font-bold">
+              {typeof station.aqi === 'number' ? station.aqi : '—'}
+            </span>
+            <AqiPill zone={station.zone} aqi={station.aqi} />
           </div>
-          <div className="mt-3 flex items-center gap-3">
-            <button
-              disabled={!pendingKawasan || busy}
-              onClick={applyReplace}
-              className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black disabled:opacity-40"
-            >
-              {busy ? 'Replacing…' : 'Replace'}
-            </button>
-            <button
-              onClick={() => {
-                setMenuOpen(false)
-                setPendingKawasan('')
-              }}
-              className="text-sm text-text-secondary"
-            >
-              Cancel
-            </button>
-          </div>
+
+          {typeof station.aqi === 'number' && (
+            <div className="mt-0.5 text-xs text-text-secondary">
+              {station.stationName ?? 'Unknown station'}
+              {station.pm25 != null && <span className="font-mono-data"> · {station.pm25} µg/m³</span>}
+            </div>
+          )}
+          {typeof station.aqi === 'number' && station.stationSelection?.distanceKm != null && (
+            <div className="mt-0.5 font-mono-data text-[11px] text-text-secondary">
+              {station.stationSelection.distanceKm}km · Tier {station.stationSelection.tier} ·{' '}
+              {bandLabel(station.stationSelection.confidenceBand)}
+            </div>
+          )}
+          {station.noCoverage && (
+            <div className="mt-1 text-xs text-zone-moderate">
+              No monitoring station within {MAX_STATION_RADIUS_KM}km. Samples here log without AQI.
+            </div>
+          )}
+        </>
+      )}
+
+      {expanded && (
+        <div className="mt-3 flex items-center gap-3">
+          <button
+            disabled={!pendingKawasan || busy}
+            onClick={applyReplace}
+            className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black disabled:opacity-40"
+          >
+            {busy ? 'Replacing…' : 'Replace'}
+          </button>
+          <button onClick={onToggleExpand} className="text-sm text-text-secondary">
+            Cancel
+          </button>
         </div>
       )}
     </div>
@@ -257,6 +264,7 @@ export default function Home({
   const [notifPromptDismissed, setNotifPromptDismissed] = useState(false)
   const [addingArea, setAddingArea] = useState(false)
   const [newKawasan, setNewKawasan] = useState('')
+  const [expandedAreaId, setExpandedAreaId] = useState(null)
 
   // Resolving a kawasan uses its centroid, which is then discarded — no
   // coordinates are returned from here or written anywhere.
@@ -309,7 +317,12 @@ export default function Home({
   }, [])
 
   const goodStation = aqi.stations.find((s) => typeof s.aqi === 'number' && s.aqi <= 50)
-  const ideal = isIdealWindow(now)
+  // Demo's four zone times are curated to always fall inside the sampling
+  // window, so the header shows the in-window state throughout a run rather
+  // than re-deriving it from a fixed time that can land exactly on the 14:00
+  // boundary.
+  const ideal = isDemo ? true : isIdealWindow(now)
+  const displayNow = isDemo && demo.demoNow ? demo.demoNow : now
   const recent = log.samples.slice(0, 5)
 
   const showNotifPrompt =
@@ -367,21 +380,13 @@ export default function Home({
           </div>
           <div className="text-right">
             <div className="font-mono-data text-xs text-text-secondary">
-              {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {displayNow.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
             <div className={`text-xs ${ideal ? 'text-zone-good' : 'text-text-secondary'}`}>
               {ideal ? 'Ideal capture window' : nextIdealWindowLabel(now)}
             </div>
           </div>
         </div>
-        {!isDemo && stationsApi?.snapshotUnusable && (
-          <div className="mt-2 rounded-lg border border-zone-moderate/40 bg-zone-moderate/10 px-3 py-2 text-xs text-zone-moderate">
-            Air quality data is out of date. Samples will log without AQI.
-          </div>
-        )}
-        {!isDemo && stationsApi?.showSnapshotAge && stationsApi.snapshotAgeLabel && (
-          <div className="mt-2 text-xs text-text-secondary">{stationsApi.snapshotAgeLabel}</div>
-        )}
 
         <div className="mt-2 grid grid-cols-1 gap-2">
           {aqi.stations.length === 0 ? (
@@ -396,55 +401,60 @@ export default function Home({
                 area={locationsApi.getLocationById(station.id)}
                 districts={stationsApi?.districts ?? []}
                 sampleCount={log.samples.filter((s) => s.locationId === station.id).length}
+                expanded={expandedAreaId === station.id}
+                onToggleExpand={() =>
+                  setExpandedAreaId((id) => (id === station.id ? null : station.id))
+                }
                 onReplace={handleReplaceArea}
                 onDelete={handleDeleteArea}
               />
             ))
           )}
 
-          {addingArea ? (
-            <div className="rounded-lg border border-accent/40 bg-surface p-3">
-              <label className="text-xs text-text-secondary" htmlFor="add-kawasan">
-                Add a kawasan
-              </label>
-              <div className="mt-1.5">
-                <KawasanSelect
-                  id="add-kawasan"
-                  districts={stationsApi?.districts ?? []}
-                  value={newKawasan}
-                  onChange={setNewKawasan}
-                />
-              </div>
-              <div className="mt-3 flex items-center gap-3">
-                <button
-                  disabled={!newKawasan}
-                  onClick={handleAddArea}
-                  className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black disabled:opacity-40"
-                >
-                  Add area
+          {locationsApi.activeLocations.length < 3 &&
+            (addingArea ? (
+              <div className="rounded-lg border border-accent/40 bg-surface p-3">
+                <label className="text-xs text-text-secondary" htmlFor="add-kawasan">
+                  Add a kawasan
+                </label>
+                <div className="mt-1.5">
+                  <KawasanSelect
+                    id="add-kawasan"
+                    districts={stationsApi?.districts ?? []}
+                    value={newKawasan}
+                    onChange={setNewKawasan}
+                  />
+                </div>
+                <div className="mt-3 flex items-center gap-3">
+                  <button
+                    disabled={!newKawasan}
+                    onClick={handleAddArea}
+                    className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black disabled:opacity-40"
+                  >
+                    Add area
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAddingArea(false)
+                      setNewKawasan('')
+                    }}
+                    className="text-sm text-text-secondary"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <button onClick={onOpenLocations} className="mt-3 block text-xs text-accent">
+                  More options — use my location, rename, restore retired
                 </button>
-                <button
-                  onClick={() => {
-                    setAddingArea(false)
-                    setNewKawasan('')
-                  }}
-                  className="text-sm text-text-secondary"
-                >
-                  Cancel
-                </button>
               </div>
-              <button onClick={onOpenLocations} className="mt-3 block text-xs text-accent">
-                More options — use my location, rename, restore retired
+            ) : (
+              <button
+                onClick={() => setAddingArea(true)}
+                className="rounded-lg border border-dashed border-border py-3 text-sm text-text-secondary"
+              >
+                + Add area
               </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setAddingArea(true)}
-              className="rounded-lg border border-dashed border-border py-3 text-sm text-text-secondary"
-            >
-              + Add area
-            </button>
-          )}
+            ))}
         </div>
 
         {/* Attribution is persistent and not dismissible — Udara Jakarta's terms
@@ -494,16 +504,16 @@ export default function Home({
             No samples yet — wait for a good sky day and hit Sample the sky.
           </p>
         ) : (
-          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+          <div className="mt-2 flex gap-3 overflow-x-auto pb-1 pr-4">
             {recent.map((s) => (
               <button
                 key={s.id}
                 onClick={onOpenLog}
-                className="flex w-28 shrink-0 flex-col gap-1.5 rounded-lg border border-border bg-surface p-2 text-left"
+                className="flex shrink-0 flex-col items-start gap-1.5 rounded-lg border border-border bg-surface p-2 text-left"
               >
-                <div className="h-14 w-full rounded" style={{ backgroundColor: s.averagedHex }} />
+                <div className="h-14 w-14 rounded" style={{ backgroundColor: s.averagedHex }} />
                 <div className="font-mono-data text-xs">{s.aqi ?? '—'}</div>
-                <div className="truncate rounded-full bg-border px-2 py-0.5 text-[10px] text-text-secondary">
+                <div className="max-w-[9rem] whitespace-normal break-words rounded-full bg-border px-2 py-0.5 text-[10px] text-text-secondary">
                   {s.location}
                 </div>
               </button>

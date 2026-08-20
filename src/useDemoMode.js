@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { DEMO_ZONES, DEMO_ZONE_ORDER } from './constants'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { DEMO_ZONES, DEMO_ZONE_ORDER, demoClockFor } from './constants'
 
 // Demo mode, driven from React state rather than the URL.
 //
@@ -123,11 +123,17 @@ export function useDemoMode() {
     if (DEMO_ZONES[key]) setZoneKey(key)
   }, [])
 
+  // Fixed to the zone's own clock time — recomputed only when the zone changes,
+  // not on a tick, so it reads as a snapshot of that moment rather than a live
+  // clock. Always today's date; see demoClockFor.
+  const demoNow = useMemo(() => (zoneKey ? demoClockFor(zoneKey) : null), [zoneKey])
+
   return {
     active,
     zoneKey,
     zoneConfig: active ? DEMO_ZONES[zoneKey] : null,
     zoneLabel: active ? DEMO_ZONES[zoneKey].label : null,
+    demoNow,
     resetToken,
     enable,
     disable,

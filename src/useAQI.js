@@ -17,8 +17,8 @@ import { pm25ToAqi } from './aqi'
 // identical numbers, while staying inside the same SAMPLE_ZONES bucket.
 const DEMO_OFFSETS = [0, -4, 4, -2]
 
-function buildDemoStations(zoneConfig, locations) {
-  const nowIso = new Date().toISOString()
+function buildDemoStations(zoneConfig, locations, demoNow) {
+  const nowIso = (demoNow ?? new Date()).toISOString()
   return locations.map((location, i) => {
     const aqi = zoneConfig.aqi + (DEMO_OFFSETS[i % DEMO_OFFSETS.length] ?? 0)
     const distanceKm = location.distanceKm ?? Math.round((1.2 + i * 0.9) * 10) / 10
@@ -91,7 +91,7 @@ export function useAQI(locations, stationsApi, demo) {
   const isDemo = Boolean(demo?.active)
 
   const stations = useMemo(() => {
-    if (isDemo) return buildDemoStations(demo.zoneConfig, locations)
+    if (isDemo) return buildDemoStations(demo.zoneConfig, locations, demo.demoNow)
 
     // The snapshot is too old to stand behind. Rather than serving a
     // many-hours-old reading as though it were current, every area reports no

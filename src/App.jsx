@@ -170,6 +170,7 @@ export default function App() {
           locations={locationsApi.activeLocations}
           orientation={orientation}
           initialLocationId={pendingLocationId}
+          demo={demo}
           onCancel={() => setView('home')}
           onComplete={(draft) => {
             setCaptureDraft(draft)
@@ -183,6 +184,8 @@ export default function App() {
           draft={captureDraft}
           aqiStations={aqi.stations}
           locations={locationsApi.activeLocations}
+          demo={demo}
+          snapshotAgeMinutes={isDemo ? 0 : stationsApi.snapshotAgeMinutes}
           onSave={handleSave}
           onCancel={() => setView('capture')}
         />
