@@ -183,9 +183,28 @@ function projectStation(s) {
   }
 }
 
+// Observed in CI: an occasional UND_ERR_CONNECT_TIMEOUT reaching this host,
+// with a successful fetch immediately before and after — i.e. an intermittent
+// connectivity blip, not a standing block (a deliberate block on this IP range
+// would fail every run, not every other one). A bounded retry is the correct
+// response to that signature; retrying would not help a 403 or a malformed
+// payload, which is why only the network fetch itself is retried here, not the
+// parse/validate steps below.
+async function fetchWithRetry(url, options, { retries = 2, delayMs = 3000 } = {}) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fetch(url, options)
+    } catch (err) {
+      if (attempt === retries) throw err
+      console.log(`  fetch attempt ${attempt + 1} failed (${err.cause?.code ?? err.message}), retrying...`)
+      await new Promise((r) => setTimeout(r, delayMs))
+    }
+  }
+}
+
 async function main() {
   console.log(`Fetching ${SOURCE_URL}`)
-  const res = await fetch(SOURCE_URL, {
+  const res = await fetchWithRetry(SOURCE_URL, {
     headers: { 'User-Agent': 'sky-sampler-snapshot/1.0 (+https://sky-sampler.web.app)' },
     signal: AbortSignal.timeout(60_000),
   })
