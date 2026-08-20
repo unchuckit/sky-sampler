@@ -6,24 +6,29 @@ import { geometryAdjustedHex, GEOMETRY_CORRECTION_MODEL } from './geometryCorrec
 
 // Fixtures for demo mode. Never written to or read from localStorage.
 //
-// Sampling areas here carry real station attachments, measured from each
-// kawasan's own centroid against a live snapshot.
+// Sampling areas here carry real station attachments, verified against a live
+// snapshot, and follow the same rules the running app enforces:
 //
-// NOTE: all three currently attach to Tier A stations, so demo mode no longer
-// shows the Tier A/B distinction. The only nearby kawasan whose nearest station
-// is an LCS unit is Mampang Prapatan (LCS-06 Taman Telur) or Pasar Minggu
-// (LCS-07). Swap one in if the talk needs to show that the app tells a
-// calibrated government instrument apart from a low-cost sensor.
+//   - every band matches its distance (under 5km is high)
+//   - coordinateSource is 'gps', because these represent places a person stands
+//     to photograph the sky, which is also why the distances are non-zero — a
+//     district centroid can land on top of a station, but a person does not
+//
+// Getting either of those wrong would make demo mode show a state the real app
+// could never produce, which is the one thing a demo must not do.
 export const DEMO_LOCATIONS = [
   {
-    id: 'demo-cilandak',
-    label: 'Cilandak',
-    stationUid: 'demo-dkj33',
-    stationName: 'DKJ33 Lebak Bulus',
-    distanceKm: 1.1,
+    id: 'demo-mampang',
+    label: 'Mampang Prapatan',
+    stationUid: 'demo-lcs06',
+    stationName: 'LCS-06 Taman Telur',
+    distanceKm: 1.2,
     confidenceBand: 'high',
-    tier: TIERS.A,
-    coordinateSource: 'district-centroid',
+    // Tier B on purpose. This is the only one of these kawasan whose nearest
+    // station is a low-cost sensor, and it is what lets the talk show that the
+    // app tells a calibrated government instrument apart from an LCS unit.
+    tier: TIERS.B,
+    coordinateSource: 'gps',
     active: true,
   },
   {
@@ -34,7 +39,7 @@ export const DEMO_LOCATIONS = [
     distanceKm: 0.9,
     confidenceBand: 'high',
     tier: TIERS.A,
-    coordinateSource: 'district-centroid',
+    coordinateSource: 'gps',
     active: true,
   },
   {
@@ -45,7 +50,7 @@ export const DEMO_LOCATIONS = [
     distanceKm: 0.7,
     confidenceBand: 'high',
     tier: TIERS.A,
-    coordinateSource: 'district-centroid',
+    coordinateSource: 'gps',
     active: true,
   },
 ]
@@ -113,7 +118,7 @@ function seed({ id, pm25, hex, area, ago, notes, geometry }) {
   }
 }
 
-const [CILANDAK, JAGAKARSA, MENTENG] = DEMO_LOCATIONS
+const [MAMPANG, JAGAKARSA, MENTENG] = DEMO_LOCATIONS
 
 export const DEMO_SAMPLES = [
   seed({
@@ -140,7 +145,7 @@ export const DEMO_SAMPLES = [
     id: 'demo-3',
     pm25: 35.9,
     hex: '#82b9dc',
-    area: CILANDAK,
+    area: MAMPANG,
     ago: 1 * DAY + 3 * HOUR,
     notes: 'Shot toward the sun — kept as a counter-example.',
     geometry: { compassHeading: 92, cameraElevation: 52, scatteringAngle: 28, sensorAvailable: true },
@@ -158,7 +163,7 @@ export const DEMO_SAMPLES = [
     id: 'demo-5',
     pm25: 18.4, // Good Day
     hex: '#4999cb',
-    area: CILANDAK,
+    area: MAMPANG,
     ago: 3 * DAY + 5 * HOUR,
     notes: 'Some scattered cloud at the horizon.',
     geometry: { compassHeading: 175, cameraElevation: 82, scatteringAngle: 104, sensorAvailable: true },

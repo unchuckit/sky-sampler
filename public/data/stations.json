@@ -10,8 +10,8 @@
       "kecamatanID": "31.73.07",
       "kota": "Kota Adm. Jakarta Barat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 33.46,
-      "dominantMetricTime": "2026-08-20T10:30:00+07:00"
+      "dominantRawValue": 33.29,
+      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
     },
     {
       "id": "022441fc-0402-4b51-af62-ba5c8e4fa37f",
@@ -23,8 +23,8 @@
       "kecamatanID": "31.73.01",
       "kota": "Kota Adm. Jakarta Barat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 60.8,
-      "dominantMetricTime": "2026-08-20T10:30:00+07:00"
+      "dominantRawValue": 60.53,
+      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
     },
     {
       "id": "0287f192-2054-44eb-a226-f22ff568b82e",
@@ -37,7 +37,7 @@
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
       "dominantRawValue": 17.69,
-      "dominantMetricTime": "2026-08-20T10:00:00+07:00"
+      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
     },
     {
       "id": "04c6a78b-bb4e-44e2-9456-5b5f29ed966c",
@@ -50,7 +50,7 @@
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
       "dominantRawValue": 65.09,
-      "dominantMetricTime": "2026-08-20T09:00:00+07:00"
+      "dominantMetricTime": "2026-08-20T10:00:00+07:00"
     },
     {
       "id": "08bc1f24-cf3b-4d6c-99a2-6393c0b11f4f",
@@ -62,8 +62,8 @@
       "kecamatanID": "31.72.01",
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
-      "dominantRawValue": 52.85,
-      "dominantMetricTime": "2026-08-20T10:30:00+07:00"
+      "dominantRawValue": 59.44,
+      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
     },
     {
       "id": "0ce85903-2c94-491f-9d3d-a22b25e92386",
@@ -75,8 +75,8 @@
       "kecamatanID": "31.74.10",
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
-      "dominantRawValue": 15.27,
-      "dominantMetricTime": "2026-08-20T10:30:00+07:00"
+      "dominantRawValue": 15.4,
+      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
     },
     {
       "id": "0d12b23f-2986-4974-9d88-53e1ec616962",
@@ -88,8 +88,8 @@
       "kecamatanID": "31.75.03",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 22.09,
-      "dominantMetricTime": "2026-08-20T10:30:00+07:00"
+      "dominantRawValue": 32.76,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "19309ede-b9bd-4bd9-902f-b8535f2d82d9",
@@ -101,8 +101,8 @@
       "kecamatanID": "31.72.02",
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
-      "dominantRawValue": 4.05,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 4.03,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "19d87909-d7d0-445e-a086-057731bbbe30",
@@ -114,8 +114,8 @@
       "kecamatanID": "31.73.01",
       "kota": "Kota Adm. Jakarta Barat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 53.07,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 12.73,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "2420af88-7961-41aa-9d16-090da63e4ef7",
@@ -127,8 +127,8 @@
       "kecamatanID": "31.72.06",
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
-      "dominantRawValue": 55.9,
-      "dominantMetricTime": "2026-08-20T10:30:00+07:00"
+      "dominantRawValue": 53.45,
+      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
     },
     {
       "id": "25e97534-6bbe-40ac-a340-8dd4fcf9ed5f",
@@ -141,7 +141,7 @@
       "kota": "Kota Adm. Jakarta Barat",
       "dominantMetric": "PM25",
       "dominantRawValue": 93.21,
-      "dominantMetricTime": "2026-08-20T09:00:00+07:00"
+      "dominantMetricTime": "2026-08-20T10:00:00+07:00"
     },
     {
       "id": "2879eea5-cadb-4392-ac09-62ca585b75d6",
@@ -153,7 +153,7 @@
       "kecamatanID": "31.74.06",
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
-      "dominantRawValue": 47,
+      "dominantRawValue": 53.04,
       "dominantMetricTime": "2026-08-20T11:00:00+07:00"
     },
     {
@@ -166,7 +166,7 @@
       "kecamatanID": "31.72.01",
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
-      "dominantRawValue": 40.4,
+      "dominantRawValue": 40.15,
       "dominantMetricTime": "2026-08-20T11:00:00+07:00"
     },
     {
@@ -179,8 +179,8 @@
       "kecamatanID": "31.74.04",
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
-      "dominantRawValue": 18.44,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 16.55,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "2d554554-7567-4ac1-ab87-536260d2ba79",
@@ -192,8 +192,8 @@
       "kecamatanID": "31.71.06",
       "kota": "Kota Adm. Jakarta Pusat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 78.9,
-      "dominantMetricTime": "2026-08-20T10:30:00+07:00"
+      "dominantRawValue": 80.56,
+      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
     },
     {
       "id": "3029cf23-cfec-4917-86f4-0afb1c3fe70a",
@@ -205,8 +205,8 @@
       "kecamatanID": "31.72.04",
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
-      "dominantRawValue": 18.12,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 18.07,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "31c9bb04-39b0-4b7b-a5ef-b6609f4741f9",
@@ -218,7 +218,7 @@
       "kecamatanID": "31.73.06",
       "kota": "Kota Adm. Jakarta Barat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 33.32,
+      "dominantRawValue": 33.74,
       "dominantMetricTime": "2026-08-20T11:00:00+07:00"
     },
     {
@@ -231,8 +231,8 @@
       "kecamatanID": "31.73.06",
       "kota": "Kota Adm. Jakarta Barat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 20.27,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 23.85,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "38146348-8e39-48fd-9b80-9a07270976ce",
@@ -245,7 +245,7 @@
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
       "dominantRawValue": 6.2,
-      "dominantMetricTime": "2026-08-20T10:00:00+07:00"
+      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
     },
     {
       "id": "3ef766cc-2918-4f12-8e7e-94e828c3f519",
@@ -257,8 +257,8 @@
       "kecamatanID": "31.73.06",
       "kota": "Kota Adm. Jakarta Barat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 45.98,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 47.98,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "428162ac-9555-4000-a2b1-d235c196b7cb",
@@ -270,8 +270,8 @@
       "kecamatanID": "31.74.10",
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
-      "dominantRawValue": 36.86,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 35.9,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "42b53155-7cfe-4543-aec2-5832c886d36f",
@@ -284,7 +284,7 @@
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
       "dominantRawValue": 64.03,
-      "dominantMetricTime": "2026-08-20T09:00:00+07:00"
+      "dominantMetricTime": "2026-08-20T10:00:00+07:00"
     },
     {
       "id": "43384e3b-44e3-4800-8b22-622b329719d8",
@@ -297,7 +297,7 @@
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
       "dominantRawValue": 30.84,
-      "dominantMetricTime": "2026-08-20T10:30:00+07:00"
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "46cebc3e-fcc7-49fe-955f-ec2448c33c71",
@@ -309,8 +309,8 @@
       "kecamatanID": "31.73.07",
       "kota": "Kota Adm. Jakarta Barat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 23.52,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 22.47,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "487c98af-c775-4cad-b541-95c33ad4371f",
@@ -322,8 +322,8 @@
       "kecamatanID": "31.73.05",
       "kota": "Kota Adm. Jakarta Barat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 30.13,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 29.93,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "493b612d-8277-47b6-9727-3854f13d5f48",
@@ -335,8 +335,8 @@
       "kecamatanID": "31.71.01",
       "kota": "Kota Adm. Jakarta Pusat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 46.39,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 45.85,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "4aba46b6-6337-4b59-87e6-2c8f2934a043",
@@ -348,8 +348,8 @@
       "kecamatanID": "31.75.10",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 20.54,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 19.86,
+      "dominantMetricTime": "2026-08-20T11:26:00+07:00"
     },
     {
       "id": "4c663e14-ddf6-4212-81b7-b9db9f9dc83c",
@@ -361,8 +361,8 @@
       "kecamatanID": "31.75.04",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 78.06,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 81.44,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "53fde217-ffa0-4213-a671-95dbb4be6c67",
@@ -374,8 +374,8 @@
       "kecamatanID": "31.73.04",
       "kota": "Kota Adm. Jakarta Barat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 29.07,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 28.58,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "5609315d-61fb-4269-a5cd-f01ac8cf8a70",
@@ -387,8 +387,8 @@
       "kecamatanID": "31.75.08",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 10.78,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 12.55,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "570b6df8-7785-4720-8ca6-d544eb3df355",
@@ -400,8 +400,8 @@
       "kecamatanID": "31.73.05",
       "kota": "Kota Adm. Jakarta Barat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 41.25,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 43.91,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "576c96d1-07d3-459b-814b-824361ad96fe",
@@ -413,8 +413,8 @@
       "kecamatanID": "31.71.06",
       "kota": "Kota Adm. Jakarta Pusat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 19.85,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 18.55,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "5a49f89a-f128-4c15-8bc3-66da51517e81",
@@ -426,8 +426,8 @@
       "kecamatanID": "31.75.03",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 26,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 27.18,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "5c375f43-82cd-479f-bfc6-2c6567653095",
@@ -439,8 +439,8 @@
       "kecamatanID": "31.74.06",
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
-      "dominantRawValue": 36.9,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 36.83,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "5c6cfb14-61e6-4794-a7d7-a0003d44969d",
@@ -452,8 +452,8 @@
       "kecamatanID": "31.71.05",
       "kota": "Kota Adm. Jakarta Pusat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 59.69,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 57.71,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "5d0e04d6-66b3-48e9-be13-81b16af54d45",
@@ -478,8 +478,8 @@
       "kecamatanID": "31.75.05",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 45.41,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 42.81,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "61246172-d1ec-4e25-8c96-ddf74f967dc5",
@@ -491,8 +491,8 @@
       "kecamatanID": "31.74.09",
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
-      "dominantRawValue": 45.23,
-      "dominantMetricTime": "2026-08-20T10:30:00+07:00"
+      "dominantRawValue": 50.34,
+      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
     },
     {
       "id": "69dec38f-8fb8-467d-9701-4fe488e378dc",
@@ -504,8 +504,8 @@
       "kecamatanID": "31.74.05",
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
-      "dominantRawValue": 34.03,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 34.02,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "6a6f0ec4-7742-46ed-91d9-7bc94e6d8c18",
@@ -518,7 +518,7 @@
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
       "dominantRawValue": 2.96,
-      "dominantMetricTime": "2026-08-20T10:00:00+07:00"
+      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
     },
     {
       "id": "6bafe2cf-c558-4b54-907b-34c9430edaf0",
@@ -530,8 +530,8 @@
       "kecamatanID": "31.72.05",
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
-      "dominantRawValue": 50.57,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 50.16,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "6da19e57-b64d-4781-9280-a9a20e2e843f",
@@ -543,8 +543,8 @@
       "kecamatanID": "31.75.02",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 21.53,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 20.88,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "6f041190-f963-4b8b-8cfc-ae979a8dc94a",
@@ -557,7 +557,7 @@
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
       "dominantRawValue": 9,
-      "dominantMetricTime": "2026-08-20T10:00:00+07:00"
+      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
     },
     {
       "id": "730cae5b-25db-42e0-9150-e3f0abc23e3c",
@@ -570,7 +570,7 @@
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
       "dominantRawValue": 65.45,
-      "dominantMetricTime": "2026-08-20T09:00:00+07:00"
+      "dominantMetricTime": "2026-08-20T10:00:00+07:00"
     },
     {
       "id": "738500d3-df50-40ab-97bb-b8da394aac53",
@@ -582,8 +582,8 @@
       "kecamatanID": "31.75.09",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 9.53,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 10.06,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "759fafcc-8b5e-4b10-a0ba-ce49ba2e6bfd",
@@ -595,8 +595,8 @@
       "kecamatanID": "31.72.01",
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
-      "dominantRawValue": 23,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 23.27,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "7d5d927f-e760-476c-bb20-a45d6480b98c",
@@ -609,7 +609,7 @@
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
       "dominantRawValue": 68.48,
-      "dominantMetricTime": "2026-08-20T09:00:00+07:00"
+      "dominantMetricTime": "2026-08-20T10:00:00+07:00"
     },
     {
       "id": "7e380d05-b4f7-4efe-9ab9-a5a259e785a0",
@@ -621,8 +621,8 @@
       "kecamatanID": "31.72.02",
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
-      "dominantRawValue": 34.59,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 33.11,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "7ed27231-325b-498f-99c4-4886359e4306",
@@ -634,8 +634,8 @@
       "kecamatanID": "31.75.05",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 18.92,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 18.3,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "80071522-f32d-4eeb-99d0-126f83979d56",
@@ -647,8 +647,8 @@
       "kecamatanID": "31.75.02",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 92.81,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 89.74,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "802a2208-80d3-464e-8e0c-dd2770fa35ab",
@@ -660,8 +660,8 @@
       "kecamatanID": "31.72.04",
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
-      "dominantRawValue": 43.69,
-      "dominantMetricTime": "2026-08-20T10:30:00+07:00"
+      "dominantRawValue": 49.57,
+      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
     },
     {
       "id": "81676dc9-cf43-42ae-808c-c127f438d841",
@@ -673,8 +673,8 @@
       "kecamatanID": "31.71.04",
       "kota": "Kota Adm. Jakarta Pusat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 19.67,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 20.16,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "839ecba9-6e30-4266-b272-a1dcd1ea2d2f",
@@ -686,8 +686,8 @@
       "kecamatanID": "31.72.06",
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
-      "dominantRawValue": 23.32,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 23.3,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "84b864cd-fb40-4f95-a347-2e854857177a",
@@ -699,8 +699,8 @@
       "kecamatanID": "31.75.10",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 60.51,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 62.45,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "8bc0eb43-1ca6-4d63-961e-826ac20ae2d7",
@@ -713,7 +713,7 @@
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
       "dominantRawValue": 70.31,
-      "dominantMetricTime": "2026-08-20T09:00:00+07:00"
+      "dominantMetricTime": "2026-08-20T10:00:00+07:00"
     },
     {
       "id": "8dea5257-ec1b-4d25-8d3f-b5024e330b40",
@@ -725,8 +725,8 @@
       "kecamatanID": "31.74.01",
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
-      "dominantRawValue": 51.11,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 55.71,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "928156b8-b6d2-4097-b57f-2c0ea6102e67",
@@ -738,8 +738,8 @@
       "kecamatanID": "31.72.04",
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
-      "dominantRawValue": 8.55,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 8.86,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "998c53c2-b5b4-48e8-8221-7568cee4f36b",
@@ -751,8 +751,8 @@
       "kecamatanID": "31.74.04",
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
-      "dominantRawValue": 38.15,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 37.93,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "9ce99524-9672-46e7-8982-b9df21e53d52",
@@ -764,8 +764,8 @@
       "kecamatanID": "31.74.08",
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
-      "dominantRawValue": 17.68,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 18.3,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "9d75e672-3aa7-4d11-bbed-c4f4ae8b34cf",
@@ -778,7 +778,7 @@
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
       "dominantRawValue": 7.63,
-      "dominantMetricTime": "2026-08-20T10:00:00+07:00"
+      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
     },
     {
       "id": "a188c80b-8233-41e1-9239-9f7143acbab8",
@@ -790,8 +790,8 @@
       "kecamatanID": "31.75.10",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 53.32,
-      "dominantMetricTime": "2026-08-20T10:30:00+07:00"
+      "dominantRawValue": 52.65,
+      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
     },
     {
       "id": "af31a885-1f01-4d5c-a4ee-f27f52ead207",
@@ -803,8 +803,8 @@
       "kecamatanID": "31.74.01",
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
-      "dominantRawValue": 36.15,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 36.82,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "af3b8741-cb8a-4df7-ae04-27da56572f79",
@@ -816,8 +816,8 @@
       "kecamatanID": "31.73.01",
       "kota": "Kota Adm. Jakarta Barat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 50.42,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 48.11,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "b24e4361-bcc4-4014-849f-c1909ab68a70",
@@ -829,8 +829,8 @@
       "kecamatanID": "31.72.01",
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
-      "dominantRawValue": 19.88,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 19.62,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "b6163f52-c25d-4cd5-99cc-8da8900c55af",
@@ -842,8 +842,8 @@
       "kecamatanID": "31.72.03",
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
-      "dominantRawValue": 22.46,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 21.21,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "b6c91758-b760-42d4-a16c-22bed5a4597d",
@@ -855,8 +855,8 @@
       "kecamatanID": "31.75.01",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 6.41,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 5.99,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "bf554216-ad15-460f-a9e5-2c64db9c6a9e",
@@ -894,8 +894,8 @@
       "kecamatanID": "31.71.01",
       "kota": "Kota Adm. Jakarta Pusat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 25.93,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 24.43,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "c668593f-4fc4-469b-8efb-669f7a5c0c26",
@@ -907,8 +907,8 @@
       "kecamatanID": "31.75.07",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 26.86,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 26.36,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "caaa1a3e-5d7d-405b-af84-1a6ca0f29ac7",
@@ -921,7 +921,7 @@
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
       "dominantRawValue": 70.62,
-      "dominantMetricTime": "2026-08-20T09:00:00+07:00"
+      "dominantMetricTime": "2026-08-20T10:00:00+07:00"
     },
     {
       "id": "cbd6c191-2c82-4eec-b29f-0a90f6082fc6",
@@ -933,8 +933,8 @@
       "kecamatanID": "31.73.02",
       "kota": "Kota Adm. Jakarta Barat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 30.68,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 30.1,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "cc0c1c0b-f16c-45a5-a707-aec6eda7a450",
@@ -946,8 +946,8 @@
       "kecamatanID": "31.74.10",
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
-      "dominantRawValue": 23.13,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 22.18,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "cc38c761-d5c1-4400-855d-e6ea0c66279a",
@@ -959,8 +959,8 @@
       "kecamatanID": "31.72.02",
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
-      "dominantRawValue": 40.58,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 39.81,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "ccb9546d-47b3-4264-86c0-10f2b43974a9",
@@ -972,8 +972,8 @@
       "kecamatanID": "31.74.02",
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
-      "dominantRawValue": 24.67,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 24.61,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "cccfe0b4-ab44-4b51-95b8-b73a767c2bcf",
@@ -986,7 +986,7 @@
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
       "dominantRawValue": 49.94,
-      "dominantMetricTime": "2026-08-20T09:00:00+07:00"
+      "dominantMetricTime": "2026-08-20T10:00:00+07:00"
     },
     {
       "id": "cf30c73e-7b48-4bff-a7d9-70b738a4d607",
@@ -999,7 +999,7 @@
       "kota": "Kota Adm. Jakarta Utara",
       "dominantMetric": "PM25",
       "dominantRawValue": 76.9,
-      "dominantMetricTime": "2026-08-20T09:00:00+07:00"
+      "dominantMetricTime": "2026-08-20T10:00:00+07:00"
     },
     {
       "id": "d0d713ca-1e2d-430c-980a-7c288f7f5210",
@@ -1012,7 +1012,7 @@
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
       "dominantRawValue": 57,
-      "dominantMetricTime": "2026-08-20T09:00:00+07:00"
+      "dominantMetricTime": "2026-08-20T10:00:00+07:00"
     },
     {
       "id": "d1e88427-b908-4d72-b4cf-90901731d1be",
@@ -1037,8 +1037,8 @@
       "kecamatanID": "31.75.07",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 15.26,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 15.34,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "d805f864-70e7-4f19-bfd1-6e42786d1ad7",
@@ -1050,8 +1050,8 @@
       "kecamatanID": "31.73.02",
       "kota": "Kota Adm. Jakarta Barat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 18.59,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 18.19,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "ddac0d7d-5b55-4371-b1c5-3d7b64473d0f",
@@ -1063,8 +1063,8 @@
       "kecamatanID": "31.75.07",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 37,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 37.47,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "dee5c8b6-14bc-4f55-ab96-1c64737aa5cd",
@@ -1076,8 +1076,8 @@
       "kecamatanID": "31.71.06",
       "kota": "Kota Adm. Jakarta Pusat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 59.42,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 59.35,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "e0aa6e66-90b9-478b-b7e4-bc4a35646b32",
@@ -1089,8 +1089,8 @@
       "kecamatanID": "31.73.08",
       "kota": "Kota Adm. Jakarta Barat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 73.4,
-      "dominantMetricTime": "2026-08-20T10:30:00+07:00"
+      "dominantRawValue": 81.59,
+      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
     },
     {
       "id": "e0bfb6af-c9d6-40bb-94c4-68589b7a44bf",
@@ -1102,8 +1102,8 @@
       "kecamatanID": "31.74.09",
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
-      "dominantRawValue": 22.65,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 22.35,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "e755fa68-840c-4542-abf7-46eefb3d059b",
@@ -1115,8 +1115,8 @@
       "kecamatanID": "31.75.09",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 67.01,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 68.66,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "e88dcdc2-4211-4229-8a46-1e7b193f3d42",
@@ -1128,8 +1128,8 @@
       "kecamatanID": "31.73.02",
       "kota": "Kota Adm. Jakarta Barat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 25.65,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 25.91,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "eab670ce-1319-45ee-aea0-4d11ee0de227",
@@ -1141,8 +1141,8 @@
       "kecamatanID": "31.74.08",
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
-      "dominantRawValue": 6.34,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 10.24,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "eb16436e-2f5a-4ffb-bac7-2e3d8d38e611",
@@ -1154,8 +1154,8 @@
       "kecamatanID": "31.75.05",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 15.47,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 15.17,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "ec0361ad-1f30-4934-8fd5-1ddfb52605c7",
@@ -1167,8 +1167,8 @@
       "kecamatanID": "31.75.03",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 20.66,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 22.13,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "ec5ae1ac-e61a-4598-9c34-55d31b7c6961",
@@ -1180,8 +1180,8 @@
       "kecamatanID": "31.75.10",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 77.14,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 76.81,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "edb97c37-f43f-4964-a762-903fe8df3044",
@@ -1193,8 +1193,8 @@
       "kecamatanID": "31.75.04",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 23.34,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 23.48,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "f0017a6c-d3e9-435c-bdaa-435305325d3f",
@@ -1207,7 +1207,7 @@
       "kota": "Kota Adm. Jakarta Barat",
       "dominantMetric": "PM25",
       "dominantRawValue": 92.93,
-      "dominantMetricTime": "2026-08-20T09:00:00+07:00"
+      "dominantMetricTime": "2026-08-20T10:00:00+07:00"
     },
     {
       "id": "f0fb0579-7606-494e-9265-7b61255df34d",
@@ -1219,8 +1219,8 @@
       "kecamatanID": "31.74.09",
       "kota": "Kota Adm. Jakarta Selatan",
       "dominantMetric": "PM25",
-      "dominantRawValue": 27.35,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 27.32,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "f54ebf4f-77fd-4690-88ac-3d14a256d8dc",
@@ -1232,8 +1232,8 @@
       "kecamatanID": "31.71.07",
       "kota": "Kota Adm. Jakarta Pusat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 41.8,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 40.74,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     },
     {
       "id": "fb382107-366e-4c3e-9693-5d8b2d5e54e5",
@@ -1245,8 +1245,8 @@
       "kecamatanID": "31.75.07",
       "kota": "Kota Adm. Jakarta Timur",
       "dominantMetric": "PM25",
-      "dominantRawValue": 21.05,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 21.47,
+      "dominantMetricTime": "2026-08-20T11:26:00+07:00"
     },
     {
       "id": "fe9918dc-4492-4a43-b28e-b57a53b79bc2",
@@ -1258,18 +1258,18 @@
       "kecamatanID": "31.71.02",
       "kota": "Kota Adm. Jakarta Pusat",
       "dominantMetric": "PM25",
-      "dominantRawValue": 39.86,
-      "dominantMetricTime": "2026-08-20T11:00:00+07:00"
+      "dominantRawValue": 40.11,
+      "dominantMetricTime": "2026-08-20T11:30:00+07:00"
     }
   ],
-  "updateTime": "2026-08-20T11:00:00+07:00",
-  "updateTimeRaw": "2026-08-20 11:00:00",
+  "updateTime": "2026-08-20T11:30:00+07:00",
+  "updateTimeRaw": "2026-08-20 11:30:00",
   "cityMeteo": {
-    "relativeHumidity": 58.1,
-    "blh": 1700.2,
-    "skinTemperature": 43.8
+    "relativeHumidity": 55.3,
+    "blh": 1884.8,
+    "skinTemperature": 43.9
   },
-  "fetchedAt": "2026-08-20T04:39:46.670Z",
+  "fetchedAt": "2026-08-20T05:10:27.129Z",
   "source": "Udara Jakarta — Dinas Lingkungan Hidup DKI Jakarta",
   "sourceUrl": "https://udara.jakarta.go.id/"
 }
