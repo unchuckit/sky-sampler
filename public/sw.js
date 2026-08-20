@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sky-sampler-v3'
+const CACHE_NAME = 'sky-sampler-v4'
 const APP_SHELL = ['/', '/manifest.json', '/icon.svg']
 
 // The station snapshot is deliberately NOT precached. It changes on every
@@ -27,10 +27,17 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url)
 
+  // Cross-origin requests (the Google Fonts stylesheet and its font files) are
+  // left alone — no respondWith, so the browser handles them normally. There is
+  // no caching strategy here for third-party assets, so wrapping them in
+  // fetch().catch(caches.match) only added a way for them to fail: a cache miss
+  // resolves undefined, and respondWith(undefined) is a network error.
+  if (url.origin !== self.location.origin) return
+
   // Network-first with a cache fallback for the station snapshot. It changes on
   // every deploy while the rest of the build does not, so a cache-first strategy
   // would compound a stale snapshot with a stale cache.
-  if (url.origin === self.location.origin && url.pathname === DATA_PATH) {
+  if (url.pathname === DATA_PATH) {
     event.respondWith(
       fetch(event.request)
         .then((res) => {
