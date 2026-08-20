@@ -33,11 +33,31 @@ concurrency:
 jobs:
   snapshot-and-deploy:
     runs-on: ubuntu-latest
-    if: github.repository_owner != '' && github.event_name != 'pull_request'
+    # Only the canonical repo deploys. A fork that somehow triggers this has no
+    # service account secret anyway, but being explicit costs nothing.
+    if: github.repository == 'unchuckit/sky-sampler'
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
+
+      # Fail here, loudly and first, rather than after a five-minute run.
+      # `firebase init hosting:github` names the secret after the project, while
+      # a hand-added one is usually the plain name — either is accepted.
+      - name: Check the Firebase service account secret exists
+        env:
+          NAMED: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SKY_SAMPLER }}
+          PLAIN: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$NAMED" ] && [ -z "$PLAIN" ]; then
+            echo "::error::No Firebase service account secret found."
+            echo "Add one under Settings -> Secrets and variables -> Actions, named either"
+            echo "  FIREBASE_SERVICE_ACCOUNT_SKY_SAMPLER  (what 'firebase init hosting:github' creates)"
+            echo "  FIREBASE_SERVICE_ACCOUNT              (if you added it by hand)"
+            echo "Until then the deployed snapshot goes stale after 6 hours and the app"
+            echo "correctly reports no coverage rather than serving old readings."
+            exit 1
+          fi
 
       - uses: actions/setup-node@v4
         with:
@@ -63,6 +83,6 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SKY_SAMPLER || secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: live
           projectId: sky-sampler
