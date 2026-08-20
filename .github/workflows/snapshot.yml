@@ -39,7 +39,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Fail here, loudly and first, rather than after a five-minute run.
       # `firebase init hosting:github` names the secret after the project, while
@@ -59,9 +59,9 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '22' # LTS. '20' triggered a deprecation warning and a silent fallback to whatever Node happened to be preinstalled on the runner.
+          node-version: '22' # LTS, for the app's own build/test/snapshot steps.
           cache: 'npm'
 
       - name: Install dependencies
