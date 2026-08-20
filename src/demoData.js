@@ -1,26 +1,29 @@
-import { PROVENANCE, TIERS, demoClockFor } from './constants'
-import { averageHexNaive, averageHexLinear } from './colour'
-import { pm25ToAqi } from './aqi'
-import { isGeometryCompliant } from './sunGeometry'
-import { geometryAdjustedHex, GEOMETRY_CORRECTION_MODEL } from './geometryCorrection'
+import { PROVENANCE, TIERS, demoClockFor } from './constants.js'
+import { averageHexNaive, averageHexLinear } from './colour.js'
+import { pm25ToAqi } from './aqi.js'
+import { isGeometryCompliant } from './sunGeometry.js'
+import { geometryAdjustedHex, GEOMETRY_CORRECTION_MODEL } from './geometryCorrection.js'
 
 // Fixtures for demo mode. Never written to or read from localStorage.
 //
-// Sampling areas here carry real station attachments, verified against a live
-// snapshot, and follow the same rules the running app enforces:
+// These are REAL station attachments. Every uid below exists in
+// demoStations.js, and every distance/tier/band triple is one the real
+// selection logic actually produces: for each area there are real points inside
+// that kecamatan from which selectStation picks exactly this station at exactly
+// this distance. scripts/test/demo-mode.test.mjs asserts that rather than
+// trusting the comment.
 //
-//   - every band matches its distance (under 5km is high)
-//   - coordinateSource is 'gps', because these represent places a person stands
-//     to photograph the sky, which is also why the distances are non-zero — a
-//     district centroid can land on top of a station, but a person does not
+// coordinateSource is 'gps' because these represent places a person stands to
+// photograph the sky, which is also why the distances are non-zero — a district
+// centroid can land on top of a station, but a person does not.
 //
-// Getting either of those wrong would make demo mode show a state the real app
+// Getting any of this wrong would make demo mode show a state the real app
 // could never produce, which is the one thing a demo must not do.
 export const DEMO_LOCATIONS = [
   {
     id: 'demo-mampang',
     label: 'Mampang Prapatan',
-    stationUid: 'demo-lcs06',
+    stationUid: 'caaa1a3e-5d7d-405b-af84-1a6ca0f29ac7',
     stationName: 'LCS-06 Taman Telur',
     distanceKm: 1.2,
     confidenceBand: 'high',
@@ -34,7 +37,7 @@ export const DEMO_LOCATIONS = [
   {
     id: 'demo-jagakarsa',
     label: 'Jagakarsa',
-    stationUid: 'demo-dki3',
+    stationUid: '61246172-d1ec-4e25-8c96-ddf74f967dc5',
     stationName: 'DKI3 Jagakarsa',
     distanceKm: 0.9,
     confidenceBand: 'high',
@@ -45,7 +48,7 @@ export const DEMO_LOCATIONS = [
   {
     id: 'demo-menteng',
     label: 'Menteng',
-    stationUid: 'demo-dki38',
+    stationUid: '576c96d1-07d3-459b-814b-824361ad96fe',
     stationName: 'DKI_PM25_38 Taman Ismail Marzuki',
     distanceKm: 0.7,
     confidenceBand: 'high',

@@ -163,9 +163,9 @@ export default function CaptureFlow({
     [aqiStations, locationId],
   )
 
-  // Demo's zone times are curated to always sit inside the sampling window —
-  // see the equivalent note in Home.jsx.
-  const ideal = demo?.active ? true : isIdealWindow()
+  // Against the demo clock when there is one, so the checklist agrees with the
+  // header rather than reading the real wall time mid-talk.
+  const ideal = isIdealWindow(demo?.active && demo.demoNow ? demo.demoNow : new Date())
 
   useEffect(() => {
     return () => {

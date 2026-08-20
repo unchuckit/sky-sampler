@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PROVENANCE, MAX_STATION_RADIUS_KM, CONFIDENCE_BANDS, getAqiZone } from './constants'
+import { formatDate, formatTime } from './time'
 
 function bandLabel(key) {
   return CONFIDENCE_BANDS.find((b) => b.key === key)?.label ?? 'Unknown confidence'
@@ -170,11 +171,11 @@ export default function SaveEntry({ draft, aqiStations, locations, demo, snapsho
         <div className="grid grid-cols-2 gap-3">
           <div>
             <div className="text-xs text-text-secondary">Date</div>
-            <div className="font-mono-data text-sm">{now.toLocaleDateString()}</div>
+            <div className="font-mono-data text-sm">{formatDate(now)}</div>
           </div>
           <div>
             <div className="text-xs text-text-secondary">Time</div>
-            <div className="font-mono-data text-sm">{now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+            <div className="font-mono-data text-sm">{formatTime(now)}</div>
           </div>
         </div>
 

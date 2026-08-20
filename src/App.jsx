@@ -7,6 +7,7 @@ import LocationsView from './LocationsView'
 import DemoPill from './DemoPill'
 import { useAQI } from './useAQI'
 import { useStations } from './useStations'
+import { useDemoStations } from './useDemoStations'
 import { useLog, computeLogStats } from './useLog'
 import { useLocations } from './useLocations'
 import { useNotifications } from './useNotifications'
@@ -53,7 +54,11 @@ export default function App() {
   // storage while the presenter is on stage.
   const realLocationsApi = useLocations({ enabled: !isDemo })
   const realLog = useLog({ enabled: !isDemo })
-  const stationsApi = useStations({ enabled: !isDemo })
+  // Same shape either way, so nothing downstream branches on demo mode: the
+  // demo swaps the station SOURCE, not the logic that runs over it.
+  const realStationsApi = useStations({ enabled: !isDemo })
+  const demoStationsApi = useDemoStations(demo)
+  const stationsApi = isDemo ? demoStationsApi : realStationsApi
   const orientation = useOrientation()
   const display = useDisplaySettings()
 

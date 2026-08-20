@@ -39,3 +39,47 @@ export function parseJakartaTimestamp(raw) {
   const d = new Date(iso)
   return Number.isNaN(d.getTime()) ? null : d
 }
+
+// ---------------------------------------------------------------------------
+// Display formatting
+// ---------------------------------------------------------------------------
+// `toLocaleDateString()` renders 12 August as "8/12/2026" under en-US, which
+// reads as 8 December to most of the world and to every Indonesian reader of
+// this log. A month written in letters cannot be misread, so it is written in
+// letters. 24-hour to match WIB convention and the monospaced register the rest
+// of the data display already uses.
+//
+// These render in the reader's own timezone, which is correct: a sample's
+// timestamp describes the moment the person was standing there.
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+function asDate(value) {
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value
+  if (value == null || value === '') return null
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+const pad = (n) => String(n).padStart(2, '0')
+
+/** "12 Aug 2026" */
+export function formatDate(value) {
+  const d = asDate(value)
+  if (!d) return '—'
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
+}
+
+/** "15:20" */
+export function formatTime(value) {
+  const d = asDate(value)
+  if (!d) return '—'
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+/** "12 Aug 2026, 15:20" */
+export function formatDateTime(value) {
+  const d = asDate(value)
+  if (!d) return '—'
+  return `${formatDate(d)}, ${formatTime(d)}`
+}

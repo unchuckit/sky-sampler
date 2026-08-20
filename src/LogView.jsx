@@ -7,6 +7,9 @@ import {
   CONFIDENCE_BANDS,
   getAqiZone,
 } from './constants'
+import { formatDate, formatTime, formatDateTime } from './time'
+import { sampleFlags } from './sampleFlags'
+import { stationDisplayName } from './stations'
 
 const STRIP_ZONES = [
   { label: 'Heavy Haze', range: [0, 3] },
@@ -50,8 +53,8 @@ function formatEntry(sample, { maskSubLocations = false } = {}) {
 
   return [
     '---',
-    `Date: ${date.toLocaleDateString()}`,
-    `Time: ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+    `Date: ${formatDate(date)}`,
+    `Time: ${formatTime(date)}`,
     `Location: ${locationLine}`,
     `AQI: ${sample.aqi ?? 'n/a'} (${zone})`,
     `PM2.5 raw: ${sample.pm25 != null ? `${sample.pm25} ug/m3` : 'n/a'}`,
@@ -146,7 +149,7 @@ function LocationEditor({ sample, aqiStations, locations, onUpdateLocation, onCl
             <ul className="mt-1.5 space-y-1">
               {sample.locationChanges.map((c, i) => (
                 <li key={i} className="font-mono-data text-[11px] text-text-secondary">
-                  {c.from} → {c.to} · {new Date(c.changedAt).toLocaleString()}
+                  {c.from} → {c.to} · {formatDateTime(c.changedAt)}
                 </li>
               ))}
             </ul>
@@ -165,36 +168,206 @@ function bandLabel(key) {
   return CONFIDENCE_BANDS.find((b) => b.key === key)?.label ?? 'Unknown confidence'
 }
 
-function SwipeRow({ sample, aqiStations, locations, display, onDelete, onUpdateLocation }) {
+/** One label/value row in the expanded card. */
+function DetailRow({ label, children, mono = true }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 py-1">
+      <span className="shrink-0 text-[11px] text-text-secondary">{label}</span>
+      <span className={`min-w-0 text-right text-[11px] ${mono ? 'font-mono-data' : ''} break-words`}>
+        {children}
+      </span>
+    </div>
+  )
+}
+
+/**
+ * Everything stored about a sample, including the fields the collapsed card
+ * never shows. Nothing here is derived for display only — it is all read back
+ * out of the record, so this doubles as a way to see exactly what was written.
+ */
+function SampleDetail({ sample, display }) {
+  const selection = sample.stationSelection ?? null
+  const g = sample.skyGeometry
+  const changeCount = sample.locationChanges?.length ?? 0
+
+  return (
+    <div className="mt-3 border-t border-border pt-2">
+      {sample.stationName ? (
+        <>
+          <DetailRow label="Station">{stationDisplayName(sample.stationName)}</DetailRow>
+          {/* The UID is what actually binds the sample to an instrument; the
+              name is a human label that could be edited upstream. */}
+          <DetailRow label="Station UID">{sample.stationUid ?? '—'}</DetailRow>
+        </>
+      ) : (
+        <DetailRow label="Station">{sample.aqi != null ? 'Manual entry' : '—'}</DetailRow>
+      )}
+
+      {selection?.distanceKm != null && (
+        <DetailRow label="Distance">{selection.distanceKm}km</DetailRow>
+      )}
+      {selection?.tier && <DetailRow label="Tier">{selection.tier}</DetailRow>}
+      {(selection?.confidenceBand || sample.confidenceBand) && (
+        <DetailRow label="Confidence">
+          {bandLabel(selection?.confidenceBand ?? sample.confidenceBand)}
+        </DetailRow>
+      )}
+      {selection?.suspect != null && (
+        <DetailRow label="Sensor check">
+          {selection.suspect ? 'Suspect' : 'Normal'}
+          {selection.neighbourDeviation != null
+            ? ` · ${selection.neighbourDeviation} µg/m³ from neighbours`
+            : ''}
+        </DetailRow>
+      )}
+
+      {/* The defensible measurement. AQI is derived from this, which is why
+          showing both on the collapsed card was showing one number twice. */}
+      <DetailRow label="PM2.5 raw">{sample.pm25 != null ? `${sample.pm25} µg/m³` : '—'}</DetailRow>
+      <DetailRow label="AQI">{sample.aqi ?? '—'}</DetailRow>
+      <DetailRow label="Provenance">{sample.provenance ?? '—'}</DetailRow>
+      <DetailRow label="Snapshot age at capture">
+        {sample.snapshotAgeMinutes != null ? `${sample.snapshotAgeMinutes} min` : '—'}
+      </DetailRow>
+      {sample.apiTimestamp && (
+        <DetailRow label="Station reading">{formatDateTime(sample.apiTimestamp)}</DetailRow>
+      )}
+
+      <DetailRow label="Sky geometry">
+        {g?.sensorAvailable
+          ? `${g.scatteringAngle != null ? `${g.scatteringAngle}°` : '—'} from sun · ${g.cameraElevation}° elevation · heading ${g.compassHeading}°`
+          : 'Not recorded'}
+      </DetailRow>
+      <DetailRow label="Comparable">
+        {sample.geometryCompliant ? 'Yes — in band' : 'No — outside band'}
+      </DetailRow>
+
+      <DetailRow label="Averaged hex">{sample.averagedHex}</DetailRow>
+      {sample.averagedHexLinear && (
+        <DetailRow label="Averaged (linear)">{sample.averagedHexLinear}</DetailRow>
+      )}
+      {sample.averagedHexGeometryAdjusted && (
+        <DetailRow label="Geometry-adjusted">
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              className="inline-block h-3 w-3 shrink-0 rounded-sm border border-border align-middle"
+              style={{ backgroundColor: sample.averagedHexGeometryAdjusted }}
+            />
+            {sample.averagedHexGeometryAdjusted} · provisional
+          </span>
+        </DetailRow>
+      )}
+
+      {sample.tapSamples?.length > 0 && (
+        <div className="flex items-baseline justify-between gap-3 py-1">
+          <span className="shrink-0 text-[11px] text-text-secondary">Tap samples</span>
+          <span className="flex gap-1">
+            {sample.tapSamples.map((hex, i) => (
+              <span
+                key={i}
+                title={hex}
+                className="h-4 w-4 rounded-sm border border-border"
+                style={{ backgroundColor: hex }}
+              />
+            ))}
+          </span>
+        </div>
+      )}
+
+      {sample.frameSelectionType && (
+        <DetailRow label="Frame">{sample.frameSelectionType}</DetailRow>
+      )}
+
+      {/* Sub-location is masked by default so the real log can go on a
+          projector without exposing free-text place names. */}
+      {!display?.maskSubLocations && sample.subLocation && (
+        <DetailRow label="Sub-location" mono={false}>
+          {sample.subLocation}
+        </DetailRow>
+      )}
+
+      {changeCount > 0 && (
+        <div className="mt-1.5">
+          <div className="text-[11px] text-text-secondary">
+            {changeCount} of {MAX_LOCATION_CHANGES} location changes used
+          </div>
+          <ul className="mt-1 space-y-0.5">
+            {sample.locationChanges.map((c, i) => (
+              <li key={i} className="font-mono-data text-[10px] text-text-secondary">
+                {c.from} → {c.to} · {formatDateTime(c.changedAt)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {sample.provenance === PROVENANCE.NO_COVERAGE && (
+        <p className="mt-1.5 text-[11px] text-zone-moderate">
+          No monitoring station within {MAX_STATION_RADIUS_KM}km. Sample saved without AQI.
+        </p>
+      )}
+    </div>
+  )
+}
+
+// Distance in CSS pixels beyond which a pointer gesture is a swipe rather than
+// a tap. Without this the expand-on-tap fires at the end of every swipe.
+const TAP_SLOP = 6
+
+function SwipeRow({
+  sample,
+  aqiStations,
+  locations,
+  display,
+  expanded,
+  onToggleExpand,
+  onDelete,
+  onUpdateLocation,
+}) {
   const [dragX, setDragX] = useState(0)
   const [editingLocation, setEditingLocation] = useState(false)
   const startRef = useRef(null)
   const baseRef = useRef(0)
   const draggingRef = useRef(false)
+  const movedRef = useRef(false)
 
   function onPointerDown(e) {
-    e.currentTarget.setPointerCapture?.(e.pointerId)
+    // Capture keeps the drag alive if the finger leaves the row, but it is an
+    // enhancement, not a requirement: it throws NotFoundError whenever the
+    // pointer is no longer active, and letting that escape would abort the
+    // handler before the gesture even starts and leave the row unresponsive.
+    try {
+      e.currentTarget.setPointerCapture?.(e.pointerId)
+    } catch {
+      // Drag still works, it just stops tracking outside the element.
+    }
     startRef.current = e.clientX
     baseRef.current = dragX
     draggingRef.current = true
+    movedRef.current = false
   }
   function onPointerMove(e) {
     if (!draggingRef.current) return
-    e.preventDefault()
     const delta = e.clientX - startRef.current
+    if (Math.abs(delta) > TAP_SLOP) movedRef.current = true
+    if (!movedRef.current) return
+    e.preventDefault()
     setDragX(Math.max(-88, Math.min(0, baseRef.current + delta)))
   }
   function onPointerUp() {
+    if (!draggingRef.current) return
     draggingRef.current = false
+    if (!movedRef.current) {
+      // A tap, not a swipe. Snap any partial drag closed and toggle.
+      setDragX(0)
+      onToggleExpand()
+      return
+    }
     setDragX((x) => (x < -44 ? -88 : 0))
   }
 
-  const date = new Date(sample.createdAt)
   const zone = typeof sample.aqi === 'number' ? getAqiZone(sample.aqi) : null
-  const isUnverified = sample.provenance === PROVENANCE.UNVERIFIED
-  const isNoCoverage = sample.provenance === PROVENANCE.NO_COVERAGE
-  const selection = sample.stationSelection ?? null
-  const changeCount = sample.locationChanges?.length ?? 0
+  const flags = sampleFlags(sample)
 
   return (
     <div className="relative overflow-hidden rounded-lg border border-border">
@@ -217,105 +390,81 @@ function SwipeRow({ sample, aqiStations, locations, display, onDelete, onUpdateL
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onToggleExpand()
+          }
+        }}
         style={{ transform: `translateX(${dragX}px)`, touchAction: 'pan-y' }}
         className="relative select-none bg-surface p-3 transition-transform"
       >
         <div className="flex gap-3">
+          {/* The colour is the finding — this project exists to establish blue
+              values, so the swatch and the hex lead and everything else defers. */}
           <div className="h-16 w-16 shrink-0 rounded" style={{ backgroundColor: sample.averagedHex }} />
           <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-mono-data text-base">{sample.averagedHex}</span>
-              <div className="flex items-center gap-1.5">
-                {isUnverified && (
-                  <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-text-secondary">
-                    Unverified AQI source
-                  </span>
-                )}
-                {zone && (
-                  <span className="rounded-full px-2 py-0.5 text-[10px] text-black" style={{ backgroundColor: zone.color }}>
-                    {zone.label}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="mt-0.5 font-mono-data text-sm text-text-secondary">
-              {sample.aqi == null ? 'No AQI' : `AQI ${sample.aqi}`}
-              {sample.pm25 != null ? ` · ${sample.pm25} µg/m³` : ''}
-              {sample.stationName ? ` · ${sample.stationName}` : sample.aqi != null ? ' · manual entry' : ''}
-            </div>
-            {/* Distance, tier and band together: how far the reading came from,
-                how much the sensor can be trusted, and how well it describes
-                this spot. All three are separate facts. */}
-            {selection?.distanceKm != null && (
-              <div className="mt-0.5 font-mono-data text-[11px] text-text-secondary">
-                {selection.distanceKm}km · Tier {selection.tier} · {bandLabel(selection.confidenceBand)}
-                {selection.suspect ? ' · suspect' : ''}
-              </div>
-            )}
-            {isNoCoverage && (
-              <div className="mt-0.5 text-[11px] text-zone-moderate">
-                No monitoring station within {MAX_STATION_RADIUS_KM}km. Sample saved without AQI.
-              </div>
-            )}
-            <div className="mt-0.5 truncate text-xs text-text-secondary">
-              {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </div>
-            {/* Sun geometry: how far from the sun, and how high. Both change the
-                sampled colour more than a 50-point AQI move does. */}
-            {sample.skyGeometry?.sensorAvailable && (
-              <div className="mt-0.5 flex items-center gap-1.5 font-mono-data text-[11px] text-text-secondary">
-                <span>
-                  {sample.skyGeometry.scatteringAngle != null
-                    ? `${sample.skyGeometry.scatteringAngle}° from sun`
-                    : 'sun angle unknown'}
-                  {' · '}
-                  {sample.skyGeometry.cameraElevation}° elevation
+            <div className="flex items-start justify-between gap-2">
+              <span className="font-mono-data text-xl font-semibold">{sample.averagedHex}</span>
+              {zone && (
+                <span
+                  className="mt-0.5 shrink-0 rounded-full px-1.5 py-0.5 text-[9px] text-black"
+                  style={{ backgroundColor: zone.color }}
+                >
+                  {zone.label}
                 </span>
-                <span className={sample.geometryCompliant ? 'text-zone-good' : 'text-text-secondary'}>
-                  {sample.geometryCompliant ? '✓' : '○'}
-                </span>
-              </div>
-            )}
-            <button
-              onClick={() => setEditingLocation((v) => !v)}
-              className="mt-0.5 text-left text-xs underline decoration-dotted text-text-secondary"
-            >
-              {sample.location}
-              {/* Sub-location is masked by default so the real log can go on a
-                  projector without exposing free-text place names. */}
-              {!display?.maskSubLocations && sample.subLocation ? ` — ${sample.subLocation}` : ''}
-              {changeCount > 0 ? ` (${changeCount} of ${MAX_LOCATION_CHANGES} changes)` : ''}
-            </button>
-            {sample.tapSamples?.length > 0 && (
-              <div className="mt-1.5 flex gap-1">
-                {sample.tapSamples.map((hex, i) => (
-                  <span key={i} className="h-4 w-4 rounded-sm border border-border" style={{ backgroundColor: hex }} />
-                ))}
-              </div>
-            )}
-            {sample.averagedHexGeometryAdjusted &&
-              sample.averagedHexGeometryAdjusted !== sample.averagedHexLinear && (
-                <div className="mt-1.5 flex items-center gap-1.5">
-                  <span
-                    className="h-3 w-3 rounded-sm border border-border"
-                    style={{ backgroundColor: sample.averagedHexGeometryAdjusted }}
-                  />
-                  <span className="font-mono-data text-[10px] text-text-secondary">
-                    {sample.averagedHexGeometryAdjusted} geometry-adjusted (provisional)
-                  </span>
-                </div>
               )}
-            {sample.notes && <p className="mt-1.5 text-xs text-text-secondary">{sample.notes}</p>}
+            </div>
+
+            {/* Wraps rather than truncates. An AQI cut to "AQI 1…" is the same
+                failure as an area name cut to "Mampang Pra…" — the line exists
+                to carry those three facts, so it gets the height it needs. */}
+            <div className="mt-1 font-mono-data text-[11px] text-text-secondary">
+              {sample.location} · {formatDateTime(sample.createdAt)}
+              {sample.aqi != null ? ` · AQI ${sample.aqi}` : ''}
+            </div>
+
+            {/* Silence means fine. This line appears only when something is
+                actually off — see sampleFlags.js. */}
+            {flags.length > 0 && (
+              <div className="mt-0.5 text-[11px] text-zone-moderate">
+                {flags.map((f) => f.label).join(' · ')}
+              </div>
+            )}
+
+            {/* The person's own observation, and the most human thing on the
+                card — so it stays visible collapsed, clipped to one line, and
+                opens out in place rather than being repeated below. */}
+            {sample.notes && (
+              <p className={`mt-0.5 text-xs text-text-secondary ${expanded ? '' : 'truncate'}`}>
+                {sample.notes}
+              </p>
+            )}
           </div>
         </div>
-        {editingLocation && (
-          <LocationEditor
-            sample={sample}
-            aqiStations={aqiStations}
-            locations={locations}
-            onUpdateLocation={(newLocationId) => onUpdateLocation(sample, newLocationId)}
-            onClose={() => setEditingLocation(false)}
-          />
+
+        {expanded && (
+          <>
+            <SampleDetail sample={sample} display={display} />
+            <button
+              onClick={() => setEditingLocation((v) => !v)}
+              className="mt-2 text-xs text-accent"
+            >
+              {editingLocation ? 'Cancel' : 'Change location'}
+            </button>
+            {editingLocation && (
+              <LocationEditor
+                sample={sample}
+                aqiStations={aqiStations}
+                locations={locations}
+                onUpdateLocation={(newLocationId) => onUpdateLocation(sample, newLocationId)}
+                onClose={() => setEditingLocation(false)}
+              />
+            )}
+          </>
         )}
       </div>
     </div>
@@ -324,6 +473,7 @@ function SwipeRow({ sample, aqiStations, locations, display, onDelete, onUpdateL
 
 export default function LogView({ log, aqiStations, locations, display, attribution, onBack }) {
   const [onlyCompliant, setOnlyCompliant] = useState(false)
+  const [expandedId, setExpandedId] = useState(null)
   const { samples, deleteSample, updateSample, stats } = log
 
   // Non-compliant samples stay valid data — the filter hides them from
@@ -458,6 +608,10 @@ export default function LogView({ log, aqiStations, locations, display, attribut
                 aqiStations={aqiStations}
                 locations={locations}
                 display={display}
+                expanded={expandedId === sample.id}
+                onToggleExpand={() =>
+                  setExpandedId((id) => (id === sample.id ? null : sample.id))
+                }
                 onDelete={deleteSample}
                 onUpdateLocation={handleUpdateLocation}
               />

@@ -1,68 +1,19 @@
 import { useCallback, useMemo } from 'react'
-import { PROVENANCE, TIERS, getAqiZone, MAX_STATION_RADIUS_KM } from './constants'
+import { PROVENANCE, getAqiZone, MAX_STATION_RADIUS_KM } from './constants'
 import { selectStation } from './stationSelection'
-import { pm25ToAqi } from './aqi'
 
 // AQI per sampling area, derived from the station snapshot.
 //
-// No network calls happen here at all any more — useStations loads a static
-// same-origin file, and this hook does the selection maths over it. AQICN is
-// gone entirely: its free tier surfaced one live station in the metro area, so
-// two of three sampling areas resolved to no coverage.
+// No network calls happen here at all — useStations loads a static same-origin
+// file, and this hook does the selection maths over it. AQICN is gone entirely:
+// its free tier surfaced one live station in the metro area, so two of three
+// sampling areas resolved to no coverage.
 //
-// Demo mode is intercepted at this boundary, so no component below needs to
-// know whether it is looking at real or mocked data.
-
-// Deterministic ±5 variation per area so the panel doesn't read as three
-// identical numbers, while staying inside the same SAMPLE_ZONES bucket.
-const DEMO_OFFSETS = [0, -4, 4, -2]
-
-function buildDemoStations(zoneConfig, locations, demoNow) {
-  const nowIso = (demoNow ?? new Date()).toISOString()
-  return locations.map((location, i) => {
-    const aqi = zoneConfig.aqi + (DEMO_OFFSETS[i % DEMO_OFFSETS.length] ?? 0)
-    const distanceKm = location.distanceKm ?? Math.round((1.2 + i * 0.9) * 10) / 10
-    const tier = location.tier ?? TIERS.A
-    const band = location.confidenceBand ?? (distanceKm < 5 ? 'high' : distanceKm < 10 ? 'moderate' : 'low')
-    // Back out a plausible raw PM2.5 for the AQI so the displayed µg/m³ and the
-    // displayed AQI agree with each other on stage.
-    const pm25 = approximatePm25ForAqi(aqi)
-    return {
-      id: location.id,
-      label: location.label,
-      aqi,
-      pm25,
-      zone: getAqiZone(aqi),
-      stationName: location.stationName ?? `${location.label} (demo)`,
-      stationUid: location.stationUid ?? null,
-      apiTimestamp: nowIso,
-      tier,
-      manual: false,
-      error: null,
-      noCoverage: false,
-      stationSelection: {
-        chosenUid: location.stationUid ?? null,
-        chosenName: location.stationName ?? `${location.label} (demo)`,
-        tier,
-        distanceKm,
-        confidenceBand: band,
-        neighbourDeviation: null,
-        suspect: false,
-        ceilingPinned: false,
-        rejected: [],
-        outOfRadiusCount: 0,
-      },
-    }
-  })
-}
-
-// Inverse of the EPA breakpoint table, to one decimal — demo only.
-function approximatePm25ForAqi(aqi) {
-  for (let pm = 0; pm <= 500; pm += 0.1) {
-    if (pm25ToAqi(Number(pm.toFixed(1))) >= aqi) return Number(pm.toFixed(1))
-  }
-  return null
-}
+// There is no demo branch in this file any more, and that is the point. Demo
+// mode swaps the station source (useDemoStations) and the clock, and everything
+// below runs unchanged — the same gates, the same scoring, the same bands. A
+// demo that shortcut this would be demonstrating a code path that does not
+// exist in the shipped app.
 
 function emptyStation(location) {
   return {
@@ -84,15 +35,16 @@ function emptyStation(location) {
 
 /**
  * @param locations user-managed sampling areas
- * @param stationsApi the useStations() result
- * @param demo { active, zoneConfig } — when active, no real data is consulted
+ * @param stationsApi useStations() live, useDemoStations() on stage — same shape
+ * @param demo the useDemoMode() result; supplies the clock the gates run against
  */
 export function useAQI(locations, stationsApi, demo) {
   const isDemo = Boolean(demo?.active)
+  // The freshness gate has to be measured against the same clock the readings
+  // were stamped with, or every demo station reads as hours stale.
+  const now = isDemo && demo.demoNow ? demo.demoNow : null
 
   const stations = useMemo(() => {
-    if (isDemo) return buildDemoStations(demo.zoneConfig, locations, demo.demoNow)
-
     // The snapshot is too old to stand behind. Rather than serving a
     // many-hours-old reading as though it were current, every area reports no
     // coverage and samples save with provenance 'no-coverage'.
@@ -123,7 +75,7 @@ export function useAQI(locations, stationsApi, demo) {
       // known and fixed (areas hold no coordinates), so this is really the
       // freshness gate plus the scoring metadata.
       const pseudoLocation = { lat: station.lat, lng: station.lng }
-      const { chosen, selection } = selectStation(pseudoLocation, [station])
+      const { chosen, selection } = selectStation(pseudoLocation, [station], now ?? new Date())
 
       if (!chosen) {
         return {
@@ -161,34 +113,27 @@ export function useAQI(locations, stationsApi, demo) {
         },
       }
     })
-  }, [isDemo, demo, locations, stationsApi.stations, stationsApi.snapshotUnusable, stationsApi.error])
+  }, [locations, now, stationsApi.stations, stationsApi.snapshotUnusable, stationsApi.error])
 
   /**
-   * Resolve an arbitrary coordinate to a station, for the Locations screen's
-   * add-time coverage check. The caller discards the coordinates immediately
-   * afterwards; nothing here retains them.
+   * Resolve an arbitrary coordinate to a station, for the add-area coverage
+   * check. The caller discards the coordinates immediately afterwards; nothing
+   * here retains them.
+   *
+   * Demo mode runs this identically, against the frozen station set. It used to
+   * short-circuit to a fabricated "Demo station at 1.4km", which meant adding an
+   * area on stage exercised none of the provenance work and produced a card that
+   * did not match the curated set. The station match is the thing worth
+   * demonstrating, so it is the thing that runs.
    */
   const checkCoverage = useCallback(
     (lat, lng) => {
-      if (isDemo) {
-        return {
-          chosen: { name: 'Demo station', tier: TIERS.A, uid: 'demo' },
-          selection: {
-            chosenUid: 'demo',
-            chosenName: 'Demo station',
-            tier: TIERS.A,
-            distanceKm: 1.4,
-            confidenceBand: 'high',
-            rejected: [],
-          },
-        }
-      }
       if (stationsApi.snapshotUnusable || !stationsApi.stations.length) {
         return { chosen: null, selection: null }
       }
-      return selectStation({ lat, lng }, stationsApi.stations)
+      return selectStation({ lat, lng }, stationsApi.stations, now ?? new Date())
     },
-    [isDemo, stationsApi.stations, stationsApi.snapshotUnusable],
+    [now, stationsApi.stations, stationsApi.snapshotUnusable],
   )
 
   const validStations = stations.filter((s) => typeof s.aqi === 'number')

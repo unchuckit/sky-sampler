@@ -1,17 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { TIERS, SNAPSHOT_UNUSABLE_HOURS } from './constants'
+import { SNAPSHOT_UNUSABLE_HOURS } from './constants'
 import { pm25ToAqi } from './aqi'
 import { computeNeighbourDeviations } from './stationSelection'
+import { tierForStationName, buildDistricts } from './stations'
 
 const SNAPSHOT_URL = '/data/stations.json'
-
-// Udara Jakarta distinguishes station types in the name prefix, and their own
-// FAQ states the difference: SPKU units are officially calibrated government
-// instruments suitable as a policy basis; LCS (Low-Cost Sensor) units extend
-// coverage but have different accuracy and are not a policy basis on their own.
-export function tierForStationName(name) {
-  return String(name ?? '').startsWith('LCS-') ? TIERS.B : TIERS.A
-}
 
 /**
  * Map a snapshot row into the shape stationSelection expects.
@@ -100,35 +93,7 @@ export function useStations({ enabled = true } = {}) {
   const snapshotUnusable =
     snapshotAgeMinutes != null && snapshotAgeMinutes > SNAPSHOT_UNUSABLE_HOURS * 60
 
-  // Districts for the "pick a district" path, deduplicated across the snapshot
-  // and grouped by kota so the list is scannable.
-  const districts = useMemo(() => {
-    if (!snapshot) return []
-    const byKey = new Map()
-    for (const s of snapshot.stations) {
-      if (!s.kecamatan) continue
-      const key = `${s.kota ?? ''}|${s.kecamatan}`
-      if (!byKey.has(key)) {
-        byKey.set(key, { kecamatan: s.kecamatan, kota: s.kota ?? 'Unknown', lats: [], lngs: [] })
-      }
-      const d = byKey.get(key)
-      if (typeof s.lat === 'number' && typeof s.lng === 'number') {
-        d.lats.push(s.lat)
-        d.lngs.push(s.lng)
-      }
-    }
-    return [...byKey.values()]
-      .map((d) => ({
-        kecamatan: d.kecamatan,
-        kota: d.kota,
-        // Centroid of the district's own stations — an approximation, and
-        // labelled as such wherever it is used.
-        lat: d.lats.length ? d.lats.reduce((a, b) => a + b, 0) / d.lats.length : null,
-        lng: d.lngs.length ? d.lngs.reduce((a, b) => a + b, 0) / d.lngs.length : null,
-      }))
-      .filter((d) => d.lat != null)
-      .sort((a, b) => a.kota.localeCompare(b.kota) || a.kecamatan.localeCompare(b.kecamatan))
-  }, [snapshot])
+  const districts = useMemo(() => (snapshot ? buildDistricts(snapshot.stations) : []), [snapshot])
 
   return {
     stations: snapshotUnusable ? [] : stations,

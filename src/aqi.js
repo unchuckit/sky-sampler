@@ -36,3 +36,25 @@ export function pm25ToAqi(pm25) {
   const { cLow, cHigh, aqiLow, aqiHigh } = bp
   return Math.round(((aqiHigh - aqiLow) / (cHigh - cLow)) * (pm25 - cLow) + aqiLow)
 }
+
+/**
+ * The inverse: the µg/m³ concentration that produces a given AQI.
+ *
+ * Used only by demo mode, which needs to work backwards from a target zone to a
+ * plausible raw measurement — the demo displays AQI computed from PM2.5 by the
+ * same path as live mode rather than assigning an AQI directly, so the two
+ * numbers on screen always agree with each other.
+ *
+ * Rounded to one decimal, matching the precision the source reports.
+ *
+ * @param {number} aqi
+ * @returns {number|null} concentration in µg/m³, or null if outside the table
+ */
+export function aqiToPm25(aqi) {
+  if (typeof aqi !== 'number' || Number.isNaN(aqi) || aqi < 0) return null
+  const bp = PM25_BREAKPOINTS.find((b) => aqi >= b.aqiLow && aqi <= b.aqiHigh)
+  if (!bp) return null
+  const { cLow, cHigh, aqiLow, aqiHigh } = bp
+  const pm25 = ((cHigh - cLow) / (aqiHigh - aqiLow)) * (aqi - aqiLow) + cLow
+  return Math.round(pm25 * 10) / 10
+}

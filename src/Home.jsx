@@ -317,12 +317,12 @@ export default function Home({
   }, [])
 
   const goodStation = aqi.stations.find((s) => typeof s.aqi === 'number' && s.aqi <= 50)
-  // Demo's four zone times are curated to always fall inside the sampling
-  // window, so the header shows the in-window state throughout a run rather
-  // than re-deriving it from a fixed time that can land exactly on the 14:00
-  // boundary.
-  const ideal = isDemo ? true : isIdealWindow(now)
+  // One clock drives both the display and the window state. The demo's zone
+  // times all sit inside the window, so this computes to in-window on stage
+  // without demo mode asserting anything — every special case is a place where
+  // the demo stops behaving like the app.
   const displayNow = isDemo && demo.demoNow ? demo.demoNow : now
+  const ideal = isIdealWindow(displayNow)
   const recent = log.samples.slice(0, 5)
 
   const showNotifPrompt =
@@ -383,7 +383,7 @@ export default function Home({
               {displayNow.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
             <div className={`text-xs ${ideal ? 'text-zone-good' : 'text-text-secondary'}`}>
-              {ideal ? 'Ideal capture window' : nextIdealWindowLabel(now)}
+              {ideal ? 'Ideal capture window' : nextIdealWindowLabel(displayNow)}
             </div>
           </div>
         </div>

@@ -77,7 +77,7 @@ export const TIERS = {
 }
 
 // Tier is now assigned from the station name prefix, which is native to the
-// Udara Jakarta data — see tierForStationName in useStations.js. Their FAQ
+// Udara Jakarta data — see tierForStationName in stations.js. Their FAQ
 // states the distinction: SPKU units are officially calibrated government
 // instruments suitable as a policy basis; LCS (Low-Cost Sensor) units extend
 // coverage but have different accuracy and are not a policy basis alone.
@@ -188,11 +188,15 @@ export const DEMO_ZONE_ORDER = ['aspirational', 'good-day', 'typical-jakarta', '
 // rather than four unrelated states. Never a hardcoded date — a stale date on
 // a projector is exactly what this guards against — only the hour and minute
 // are fixed.
+// All four sit comfortably inside IDEAL_WINDOW rather than on its boundary, so
+// the in-window state falls out of the normal calculation and demo mode needs
+// no assertion of its own. 14:00 is the exclusive end of the window, so a zone
+// stamped exactly 14:00 would read as out of window.
 export const DEMO_ZONE_TIMES = {
   aspirational: { hour: 10, minute: 45 },
-  'good-day': { hour: 12, minute: 2 },
-  'typical-jakarta': { hour: 13, minute: 18 },
-  'heavy-haze': { hour: 14, minute: 0 },
+  'good-day': { hour: 11, minute: 23 },
+  'typical-jakarta': { hour: 12, minute: 30 },
+  'heavy-haze': { hour: 13, minute: 59 },
 }
 
 export function demoClockFor(zoneKey, base = new Date()) {
