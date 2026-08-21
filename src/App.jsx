@@ -197,8 +197,6 @@ export default function App() {
       {view === 'log' && (
         <LogView
           log={log}
-          aqiStations={aqi.stations}
-          locations={locationsApi.activeLocations}
           display={display}
           attribution={stationsApi.attribution}
           onBack={() => setView('home')}

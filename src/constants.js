@@ -239,6 +239,34 @@ export const DEMO_ZONE_TIMES = {
   'heavy-haze': { hour: 13, minute: 59 },
 }
 
+// Sky geometry for a capture taken during a demo, one per zone.
+//
+// A THIRD FABRICATED THING, alongside the readings and the clock, and worth
+// naming as such. On stage the phone is pointed at a projector or a ceiling,
+// never at the sky, so the real compass and tilt would report whatever the
+// presenter's hand happened to be doing and the sample would come out
+// non-compliant — flagged "Off-angle" for a reason that has nothing to do with
+// the point being made.
+//
+// Every value here is inside the comparable band (scattering 60-120°,
+// elevation above 45°), so a live capture in any zone reads as a good sample.
+// They differ per zone so four captures in a row do not look copy-pasted.
+//
+// The seeded log still carries one deliberately non-compliant sample, so the
+// off-angle treatment is still demonstrable — it is just not something a live
+// capture stumbles into by accident.
+export const DEMO_ZONE_GEOMETRY = {
+  aspirational: { compassHeading: 188, cameraElevation: 86, scatteringAngle: 97 },
+  'good-day': { compassHeading: 160, cameraElevation: 88, scatteringAngle: 91 },
+  'typical-jakarta': { compassHeading: 210, cameraElevation: 71, scatteringAngle: 96 },
+  'heavy-haze': { compassHeading: 195, cameraElevation: 78, scatteringAngle: 88 },
+}
+
+export function demoGeometryFor(zoneKey) {
+  const g = DEMO_ZONE_GEOMETRY[zoneKey]
+  return g ? { ...g, sensorAvailable: true } : null
+}
+
 export function demoClockFor(zoneKey, base = new Date()) {
   const t = DEMO_ZONE_TIMES[zoneKey]
   if (!t) return null

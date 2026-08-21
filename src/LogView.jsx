@@ -100,71 +100,6 @@ function exportLog(samples, options) {
   URL.revokeObjectURL(url)
 }
 
-function LocationEditor({ sample, aqiStations, locations, onUpdateLocation, onClose }) {
-  const [showHistory, setShowHistory] = useState(false)
-  const changeCount = sample.locationChanges?.length ?? 0
-  const locked = changeCount >= MAX_LOCATION_CHANGES
-
-  // Only locations currently backed by a confirmed live AQI reading are
-  // selectable — this is the coverage check, not a free-text field.
-  const availableLocations = locations.filter((loc) => {
-    const station = aqiStations?.find((s) => s.id === loc.id)
-    return typeof station?.aqi === 'number'
-  })
-
-  return (
-    <div className="mt-2 rounded-lg border border-border bg-bg p-3">
-      {locked ? (
-        <p className="text-xs text-zone-unhealthy">Location locked — 3 changes used.</p>
-      ) : availableLocations.length === 0 ? (
-        <p className="text-xs text-text-secondary">No AQI station within range — pick from the list.</p>
-      ) : (
-        <div className="flex flex-wrap gap-2">
-          {availableLocations.map((loc) => (
-            <button
-              key={loc.id}
-              onClick={() => {
-                onUpdateLocation(loc.id)
-                onClose()
-              }}
-              disabled={loc.id === sample.locationId}
-              className={`rounded-full border px-3 py-1.5 text-xs ${
-                loc.id === sample.locationId
-                  ? 'border-accent bg-accent text-black'
-                  : 'border-border bg-surface text-text'
-              }`}
-            >
-              {loc.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {changeCount > 0 && (
-        <div className="mt-2">
-          <button className="text-xs text-accent" onClick={() => setShowHistory((v) => !v)}>
-            {changeCount} of {MAX_LOCATION_CHANGES} location changes used
-            {showHistory ? ' ↑' : ' ↓'}
-          </button>
-          {showHistory && (
-            <ul className="mt-1.5 space-y-1">
-              {sample.locationChanges.map((c, i) => (
-                <li key={i} className="font-mono-data text-[11px] text-text-secondary">
-                  {c.from} → {c.to} · {formatDateTime(c.changedAt)}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-
-      <button className="mt-2 text-xs text-text-secondary" onClick={onClose}>
-        Cancel
-      </button>
-    </div>
-  )
-}
-
 function bandLabel(key) {
   return CONFIDENCE_BANDS.find((b) => b.key === key)?.label ?? 'Unknown confidence'
 }
@@ -351,16 +286,12 @@ const TAP_SLOP = 6
 
 function SwipeRow({
   sample,
-  aqiStations,
-  locations,
   display,
   expanded,
   onToggleExpand,
   onDelete,
-  onUpdateLocation,
 }) {
   const [dragX, setDragX] = useState(0)
-  const [editingLocation, setEditingLocation] = useState(false)
   const startRef = useRef(null)
   const baseRef = useRef(0)
   const draggingRef = useRef(false)
@@ -461,12 +392,17 @@ function SwipeRow({
               )}
             </div>
 
-            {/* Wraps rather than truncates. An AQI cut to "AQI 1…" is the same
+            {/* Where, then what, then when. The AQI sits beside the area rather
+                than after the timestamp: it is the reading the colour is being
+                compared against, so it belongs next to the place it describes,
+                and the date is the part you scan for last.
+                Wraps rather than truncates. An AQI cut to "AQI 1…" is the same
                 failure as an area name cut to "Mampang Pra…" — the line exists
                 to carry those three facts, so it gets the height it needs. */}
             <div className="mt-1 font-mono-data text-[11px] text-text-secondary">
-              {sample.location} · {formatDateTime(sample.createdAt)}
+              {sample.location}
               {sample.aqi != null ? ` · AQI ${sample.aqi}` : ''}
+              {` · ${formatDateTime(sample.createdAt)}`}
             </div>
 
             {/* Silence means fine. This line appears only when something is
@@ -488,35 +424,16 @@ function SwipeRow({
           </div>
         </div>
 
-        {expanded && (
-          <>
-            <SampleDetail sample={sample} display={display} />
-            <button
-              onClick={() => setEditingLocation((v) => !v)}
-              className="mt-2 text-xs text-accent"
-            >
-              {editingLocation ? 'Cancel' : 'Change location'}
-            </button>
-            {editingLocation && (
-              <LocationEditor
-                sample={sample}
-                aqiStations={aqiStations}
-                locations={locations}
-                onUpdateLocation={(newLocationId) => onUpdateLocation(sample, newLocationId)}
-                onClose={() => setEditingLocation(false)}
-              />
-            )}
-          </>
-        )}
+        {expanded && <SampleDetail sample={sample} display={display} />}
       </div>
     </div>
   )
 }
 
-export default function LogView({ log, aqiStations, locations, display, attribution, onBack }) {
+export default function LogView({ log, display, attribution, onBack }) {
   const [onlyCompliant, setOnlyCompliant] = useState(false)
   const [expandedId, setExpandedId] = useState(null)
-  const { samples, deleteSample, updateSample, stats } = log
+  const { samples, deleteSample, stats } = log
 
   // Non-compliant samples stay valid data — the filter hides them from
   // side-by-side comparison, it does not discard them.
@@ -526,25 +443,6 @@ export default function LogView({ log, aqiStations, locations, display, attribut
   samples.forEach((s) => {
     if (s.averagedHex) dotsBySwatch[nearestSwatchIndex(s.averagedHex)].push(s)
   })
-
-  // Changing a sample's location never rewrites its AQI — that reading was
-  // taken at capture time against a specific station. It just re-labels the
-  // location and marks the sample unverified, plus appends to the audit trail.
-  function handleUpdateLocation(sample, newLocationId) {
-    if ((sample.locationChanges?.length ?? 0) >= MAX_LOCATION_CHANGES) return
-    const newLocation = locations.find((l) => l.id === newLocationId)
-    if (!newLocation) return
-    updateSample(sample.id, (s) => ({
-      ...s,
-      locationId: newLocationId,
-      location: newLocation.label,
-      provenance: PROVENANCE.UNVERIFIED,
-      locationChanges: [
-        ...(s.locationChanges ?? []),
-        { from: s.locationId, to: newLocationId, changedAt: new Date().toISOString() },
-      ],
-    }))
-  }
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-bg">
@@ -650,15 +548,12 @@ export default function LogView({ log, aqiStations, locations, display, attribut
               <SwipeRow
                 key={sample.id}
                 sample={sample}
-                aqiStations={aqiStations}
-                locations={locations}
                 display={display}
                 expanded={expandedId === sample.id}
                 onToggleExpand={() =>
                   setExpandedId((id) => (id === sample.id ? null : sample.id))
                 }
                 onDelete={deleteSample}
-                onUpdateLocation={handleUpdateLocation}
               />
             ))}
           </div>

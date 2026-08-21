@@ -14,7 +14,6 @@ import Toggle from './Toggle'
 import KawasanSelect, { findDistrict, districtKey, USE_MY_LOCATION } from './KawasanSelect'
 import { COORDINATE_SOURCE, getCurrentPosition } from './useLocations'
 import { haversineKm } from './stationSelection'
-import { stationDisplayName } from './stations'
 import { areaNotes } from './sampleFlags'
 
 function bandLabel(key) {
@@ -32,6 +31,18 @@ function bandLabel(key) {
 function distanceLabel(distanceKm, source) {
   if (distanceKm == null) return null
   return source === COORDINATE_SOURCE.DISTRICT_CENTROID ? `~${distanceKm}km` : `${distanceKm}km`
+}
+
+/**
+ * The middot between facts on a card line.
+ *
+ * Rendered in the monospaced face on purpose. Its neighbours are monospaced —
+ * distances and readings — and a proportional space either side of the dot is
+ * visibly narrower than a monospaced one, which made the gaps down a single
+ * line come out uneven.
+ */
+function Sep() {
+  return <span className="font-mono-data">{' · '}</span>
 }
 
 function AqiPill({ zone, aqi }) {
@@ -285,16 +296,14 @@ function AreaCard({
               words and not the punctuation. */}
           {typeof station.aqi === 'number' && (
             <div className="mt-0.5 text-xs text-text-secondary">
-              {stationDisplayName(station.stationName)}
               {selection?.distanceKm != null && (
                 <span className="font-mono-data">
-                  {' · '}
-                  {distanceLabel(selection.distanceKm, area?.coordinateSource)}
+                  Stationed {distanceLabel(selection.distanceKm, area?.coordinateSource)} away
                 </span>
               )}
               {notes.map((note) => (
                 <span key={note}>
-                  {' · '}
+                  <Sep />
                   <span className="text-zone-moderate">{note}</span>
                 </span>
               ))}
@@ -424,8 +433,15 @@ function AreaCard({
                   >
                     {retiring ? 'Retire' : 'Remove'}
                   </button>
+                  {/* Backing out of a delete returns the card to rest, not to
+                      the menu it came through. "Cancel" here means "I did not
+                      want to do that", and dropping someone back onto the
+                      replace panel answers a question they were not asking. */}
                   <button
-                    onClick={() => setConfirmingDelete(false)}
+                    onClick={() => {
+                      setConfirmingDelete(false)
+                      onToggleExpand()
+                    }}
                     className="text-sm text-text-secondary"
                   >
                     Cancel

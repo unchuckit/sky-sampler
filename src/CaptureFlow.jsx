@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { PROVENANCE, isIdealWindow, MAX_STATION_RADIUS_KM } from './constants'
+import { PROVENANCE, isIdealWindow, MAX_STATION_RADIUS_KM, demoGeometryFor } from './constants'
 import { rgbToHex, hexToRgb, averageHexNaive, averageHexLinear } from './colour'
 import { ORIENTATION_STATE } from './useOrientation'
 import { computeSkyGeometry, isGeometryCompliant, geometryWarnings } from './sunGeometry'
@@ -188,8 +188,10 @@ export default function CaptureFlow({
     setStep('camera')
     // Kicked off alongside the camera, not lazily at capture time, so the live
     // geometry readout has a coordinate to compute a scattering angle against
-    // while the person is still framing the shot.
-    if (!positionRef.current) {
+    // while the person is still framing the shot. Skipped in demo mode, where
+    // the geometry is fixed per zone — there is nothing to compute, and a
+    // location prompt mid-talk is the last thing anyone wants.
+    if (!demoGeometry && !positionRef.current) {
       getCurrentPosition()
         .then((position) => {
           positionRef.current = position
@@ -210,6 +212,14 @@ export default function CaptureFlow({
 
   const { getReading } = orientation
 
+  // Fixed per zone and always inside the comparable band — see
+  // DEMO_ZONE_GEOMETRY. Null outside demo mode, which is what every branch
+  // below tests against.
+  const demoGeometry = useMemo(
+    () => (demo?.active ? demoGeometryFor(demo.zoneKey) : null),
+    [demo?.active, demo?.zoneKey],
+  )
+
   // Live sky-geometry readout while framing, so a non-compliant shot is
   // apparent before the shutter fires rather than discovered afterwards.
   // Polled on an interval rather than reacting to the orientation hook's own
@@ -219,6 +229,12 @@ export default function CaptureFlow({
   useEffect(() => {
     if (step !== 'camera' || cameraError) {
       setLiveGeometry(null)
+      return
+    }
+    // On stage the phone points at a projector, not the sky, so real sensors
+    // would report a non-compliant frame for reasons unrelated to the talk.
+    if (demoGeometry) {
+      setLiveGeometry(demoGeometry)
       return
     }
     const id = setInterval(() => {
@@ -235,7 +251,7 @@ export default function CaptureFlow({
       )
     }, 100)
     return () => clearInterval(id)
-  }, [step, cameraError, getReading])
+  }, [step, cameraError, getReading, demoGeometry])
 
   const liveWarning = useMemo(() => geometryWarnings(liveGeometry)[0] ?? null, [liveGeometry])
 
@@ -246,6 +262,10 @@ export default function CaptureFlow({
    * moved.
    */
   const captureGeometry = useCallback(async () => {
+    if (demoGeometry) {
+      setSkyGeometry(demoGeometry)
+      return demoGeometry
+    }
     let position = positionRef.current
     if (!position) {
       try {
@@ -265,7 +285,7 @@ export default function CaptureFlow({
     })
     setSkyGeometry(geometry)
     return geometry
-  }, [orientation])
+  }, [orientation, demoGeometry])
 
   async function captureThreeShots() {
     if (capturing) return
@@ -429,10 +449,15 @@ export default function CaptureFlow({
 
   const selectedLocation = locations.find((l) => l.id === locationId)
 
-  // Sensors are required before anything else in this flow.
+  // Sensors are required before anything else in this flow — except in demo
+  // mode, where the geometry is fixed per zone and never read from a sensor.
+  // The gate exists to stop real samples being recorded without geometry; a
+  // demo capture has geometry by construction, so the gate would only block a
+  // rehearsal on a laptop for no benefit.
   if (
-    orientation.state === ORIENTATION_STATE.UNSUPPORTED ||
-    orientation.state === ORIENTATION_STATE.DENIED
+    !demoGeometry &&
+    (orientation.state === ORIENTATION_STATE.UNSUPPORTED ||
+      orientation.state === ORIENTATION_STATE.DENIED)
   ) {
     return <SensorGate orientation={orientation} onCancel={onCancel} />
   }

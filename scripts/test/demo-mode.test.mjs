@@ -8,11 +8,13 @@ import { selectStation, haversineKm } from '../../src/stationSelection.js'
 import { buildDistricts, tierForStationName } from '../../src/stations.js'
 import { pm25ToAqi } from '../../src/aqi.js'
 import { sampleFlags, areaNotes, recencyNote } from '../../src/sampleFlags.js'
+import { isGeometryCompliant, geometryWarnings } from '../../src/sunGeometry.js'
 import {
   DEMO_ZONES,
   DEMO_ZONE_ORDER,
   DEMO_ZONE_TIMES,
   demoClockFor,
+  demoGeometryFor,
   getSampleZone,
   isIdealWindow,
   MAX_READING_AGE_HOURS,
@@ -215,6 +217,48 @@ describe('demo readings are synthesized honestly', () => {
         )
       }
     }
+  })
+})
+
+// On stage the phone points at a projector, never at the sky, so a capture
+// reading real sensors would come out non-compliant for reasons unrelated to
+// the talk. The geometry is fixed per zone instead — the third and last thing
+// demo mode fabricates, after the readings and the clock.
+describe('demo capture geometry', () => {
+  test('every zone has geometry, and all four are in the comparable band', () => {
+    for (const zoneKey of DEMO_ZONE_ORDER) {
+      const geometry = demoGeometryFor(zoneKey)
+      assert.ok(geometry, `${zoneKey} has no geometry`)
+      assert.equal(geometry.sensorAvailable, true)
+      assert.equal(
+        isGeometryCompliant(geometry),
+        true,
+        `${zoneKey} at ${geometry.scatteringAngle}° / ${geometry.cameraElevation}° is out of band`,
+      )
+      assert.deepEqual(geometryWarnings(geometry), [], `${zoneKey} fires a capture warning`)
+    }
+  })
+
+  test('the four zones differ, so four captures in a row do not look copy-pasted', () => {
+    const seen = DEMO_ZONE_ORDER.map((z) => {
+      const g = demoGeometryFor(z)
+      return `${g.scatteringAngle}/${g.cameraElevation}`
+    })
+    assert.equal(new Set(seen).size, DEMO_ZONE_ORDER.length, `duplicates in ${seen.join(', ')}`)
+  })
+
+  test('an unknown zone yields null rather than a fabricated default', () => {
+    assert.equal(demoGeometryFor('not-a-zone'), null)
+    assert.equal(demoGeometryFor(undefined), null)
+  })
+
+  // Fabricating compliant geometry must not remove the off-angle case from the
+  // demo entirely — it just stops a live capture stumbling into it by accident.
+  test('the seeded log still carries a non-compliant sample to show', () => {
+    assert.ok(
+      DEMO_SAMPLES.some((s) => s.geometryCompliant === false),
+      'no off-angle sample left to demonstrate',
+    )
   })
 })
 
