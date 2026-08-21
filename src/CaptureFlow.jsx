@@ -53,7 +53,13 @@ function aqiProvenanceFor(station) {
   return PROVENANCE.VERIFIED
 }
 
+// Ordered as the person moves: get to the spot, aim, frame, then check the
+// camera. Standing in the right place comes first because it is the only one
+// that cannot be fixed after the shutter — an area's station attachment
+// describes that spot, so a sample taken somewhere else is attached to the
+// wrong air.
 const CHECKLIST_BULLETS = [
+  'Set (or return) to your sampling spot',
   'Point straight up toward the zenith',
   'Avoid clouds, avoid sun, avoid horizon',
   'Camera enhancements off — see Settings notes below',
