@@ -7,7 +7,7 @@ import { buildDemoStationSet } from '../../src/demoStationSet.js'
 import { selectStation, haversineKm } from '../../src/stationSelection.js'
 import { buildDistricts, tierForStationName } from '../../src/stations.js'
 import { pm25ToAqi } from '../../src/aqi.js'
-import { sampleFlags } from '../../src/sampleFlags.js'
+import { sampleFlags, areaNotes, recencyNote } from '../../src/sampleFlags.js'
 import {
   DEMO_ZONES,
   DEMO_ZONE_ORDER,
@@ -17,6 +17,7 @@ import {
   isIdealWindow,
   MAX_READING_AGE_HOURS,
   MAX_STATION_RADIUS_KM,
+  RECENCY_PENALTY_AFTER_HOURS,
   SAMPLE_GOAL,
   TIERS,
 } from '../../src/constants.js'
@@ -148,6 +149,59 @@ describe('demo readings are synthesized honestly', () => {
     const one = setFor('aspirational')[0]
     const two = setFor('heavy-haze').find((s) => s.uid === one.uid)
     assert.notEqual(one.aqi, two.aqi)
+  })
+
+  // No real station reports late enough to land in the penalised band, so one
+  // is aged deliberately — otherwise the recency line could never be shown on
+  // stage. See DEMO_LAG_OVERRIDE_MINUTES.
+  test('exactly one area is stale enough to render the recency note', () => {
+    const stations = setFor('typical-jakarta')
+    const clock = clockFor('typical-jakarta')
+    const ageOf = (s) => (clock.getTime() - new Date(s.lastSeen).getTime()) / 3_600_000
+
+    const penalised = stations.filter(
+      (s) => ageOf(s) >= RECENCY_PENALTY_AFTER_HOURS && ageOf(s) <= MAX_READING_AGE_HOURS,
+    )
+    assert.equal(penalised.length, 1, `expected one penalised station, got ${penalised.length}`)
+    assert.match(penalised[0].name, /Jagakarsa/)
+    assert.equal(recencyNote(Math.round(ageOf(penalised[0]) * 10) / 10), 'Updated 4 hours ago')
+  })
+
+  // Mirrors the area-card path exactly: an area holds a resolved station uid and
+  // re-runs the gates against that station alone (it carries no coordinates to
+  // re-search from). Under the old hard gate a 4h reading vanished here and the
+  // card went blank; now it is kept and annotated.
+  test('the aged area still resolves, and renders the recency note', () => {
+    const stations = setFor('typical-jakarta')
+    const area = DEMO_LOCATIONS.find((a) => a.label === 'Jagakarsa')
+    const station = stations.find((s) => s.uid === area.stationUid)
+
+    const { chosen, selection } = selectStation(
+      { lat: station.lat, lng: station.lng },
+      [station],
+      clockFor('typical-jakarta'),
+    )
+    assert.ok(chosen, 'the aged station was excluded — the hard gate is back')
+    assert.equal(chosen.uid, area.stationUid)
+    assert.equal(selection.readingAgeHours, 4)
+    assert.deepEqual(areaNotes({ ...selection, confidenceBand: area.confidenceBand }), [
+      'Updated 4 hours ago',
+    ])
+  })
+
+  // The flip side, and the reason the penalty is worth having: staleness costs
+  // enough that a modestly-further fresh station wins outright.
+  test('the penalty is heavy enough to lose to a fresher neighbour nearby', () => {
+    const stations = setFor('typical-jakarta')
+    const aged = stations.find((s) => s.name === 'DKI3 Jagakarsa')
+    // A point 0.89km from the aged station and 1.36km from a fresh one:
+    // 0.89 x 2.0 = 1.78 against 1.36 x 1.0 = 1.36.
+    const { chosen } = selectStation(
+      { lat: aged.lat + 0.008, lng: aged.lng },
+      stations,
+      clockFor('typical-jakarta'),
+    )
+    assert.equal(chosen.name, 'DKI_PM25_32 Waduk Jagakarsa')
   })
 
   test('every station passes the freshness gate against its own zone clock', () => {

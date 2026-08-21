@@ -5,6 +5,7 @@ import {
   MAX_STATION_RADIUS_KM,
   CONFIDENCE_BANDS,
   ATTRIBUTION,
+  tierLabel,
 } from './constants'
 import { ORIENTATION_STATE } from './useOrientation'
 import { formatTime } from './time'
@@ -265,9 +266,7 @@ function AreaCard({
             {retiring ? `Retire ${station.label}?` : `Remove ${station.label}?`}
           </p>
           {retiring && (
-            <p className="mt-1 text-xs text-text-secondary">
-              Its {sampleCount} logged sample{sampleCount === 1 ? ' stays' : 's stay'} in the log.
-            </p>
+            <p className="mt-1 text-xs text-text-secondary">Past logged samples will not be deleted.</p>
           )}
           <div className="mt-3 flex items-center gap-3">
             <button
@@ -345,8 +344,8 @@ function AreaCard({
             <dd>{distanceLabel(selection?.distanceKm, area?.coordinateSource) ?? '—'}</dd>
           </div>
           <div className="flex justify-between gap-3 py-0.5">
-            <dt>Tier</dt>
-            <dd>{selection?.tier ?? '—'}</dd>
+            <dt>Sensor grade</dt>
+            <dd>{tierLabel(selection?.tier)}</dd>
           </div>
           <div className="flex justify-between gap-3 py-0.5">
             <dt>Confidence</dt>

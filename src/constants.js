@@ -76,6 +76,22 @@ export const TIERS = {
   C: 'C', // uncalibrated or community
 }
 
+// What the tier letter means, in words, for anywhere a person reads it.
+//
+// The letter is our own internal shorthand and carries no meaning to anyone who
+// has not read this file — "Tier A" says nothing about why the reading can be
+// trusted. The label does. The letters stay as the stored value and as the
+// scoring key, so nothing downstream has to change and exports keep parsing.
+export const TIER_LABELS = {
+  [TIERS.A]: 'Government grade',
+  [TIERS.B]: 'Low-cost (calibrated)',
+  [TIERS.C]: 'Community (uncalibrated)',
+}
+
+export function tierLabel(tier) {
+  return TIER_LABELS[tier] ?? '—'
+}
+
 // Tier is now assigned from the station name prefix, which is native to the
 // Udara Jakarta data — see tierForStationName in stations.js. Their FAQ
 // states the distinction: SPKU units are officially calibrated government

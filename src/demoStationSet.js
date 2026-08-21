@@ -23,6 +23,27 @@ import { tierForStationName } from './stations.js'
 export const AQI_SPREAD = 5
 
 /**
+ * THE ONE FABRICATED FACT IN THE STATION SET, and it is deliberate.
+ *
+ * Every real station reports within 2 hours, so nothing in the frozen set ever
+ * lands in the 3-6h band where recency is penalised — meaning the "Updated N
+ * hours ago" line, and the soft-penalty behaviour it represents, could never be
+ * shown on stage. This ages exactly one station into that band so the
+ * behaviour is demonstrable.
+ *
+ * It lives here rather than in demoStations.js on purpose: that file is
+ * generated from a real fetch and must stay a faithful copy of what the source
+ * actually said. Fabrication belongs in hand-written code where it can be
+ * labelled, not baked into data that reads as real.
+ *
+ * DKI3 Jagakarsa, one of the three curated demo areas, so the line appears on a
+ * card the presenter is already talking about.
+ */
+export const DEMO_LAG_OVERRIDE_MINUTES = {
+  '61246172-d1ec-4e25-8c96-ddf74f967dc5': 4 * 60, // DKI3 Jagakarsa — inside the 6h wall, past the 3h penalty
+}
+
+/**
  * FNV-1a. Any stable hash would do; what matters is that it is a pure function
  * of the station and the zone, so a re-render — or advancing to a zone and back
  * — produces the identical reading rather than jittering on screen mid-talk.
@@ -77,7 +98,9 @@ export function buildDemoStationSet(zoneKey, zoneAqi, demoNow) {
       // From the real name prefix, by the same function live mode uses.
       tier: tierForStationName(row.name),
       network: 'Udara Jakarta',
-      lastSeen: new Date(demoNow.getTime() - row.lagMinutes * 60_000).toISOString(),
+      lastSeen: new Date(
+        demoNow.getTime() - (DEMO_LAG_OVERRIDE_MINUTES[row.id] ?? row.lagMinutes) * 60_000,
+      ).toISOString(),
     }
   })
   return computeNeighbourDeviations(projected)

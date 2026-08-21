@@ -42,26 +42,45 @@ export default function KawasanSelect({
     )
   }
 
+  // The native arrow sits hard against the right edge and its inset is not
+  // ours to control — it differs per browser and ignores padding on some. Drawn
+  // by hand instead, so it keeps a deliberate margin from the border.
   return (
-    <select
-      id={id}
-      value={value}
-      disabled={locating}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded border border-border bg-bg px-3 py-2 text-sm disabled:opacity-60"
-    >
-      <option value="">{locating ? 'Finding your kawasan…' : placeholder}</option>
-      <option value={USE_MY_LOCATION}>Use my location</option>
-      {byKota.map(([kota, list]) => (
-        <optgroup key={kota} label={kota}>
-          {list.map((d) => (
-            <option key={districtKey(d)} value={districtKey(d)}>
-              {d.kecamatan}
-            </option>
-          ))}
-        </optgroup>
-      ))}
-    </select>
+    <div className="relative">
+      <select
+        id={id}
+        value={value}
+        disabled={locating}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full appearance-none rounded border border-border bg-bg py-2 pl-3 pr-10 text-sm disabled:opacity-60"
+      >
+        <option value="">{locating ? 'Finding your kawasan…' : placeholder}</option>
+        <option value={USE_MY_LOCATION}>Use my location</option>
+        {byKota.map(([kota, list]) => (
+          <optgroup key={kota} label={kota}>
+            {list.map((d) => (
+              <option key={districtKey(d)} value={districtKey(d)}>
+                {d.kecamatan}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary"
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M6 9l6 6 6-6" />
+      </svg>
+    </div>
   )
 }
 

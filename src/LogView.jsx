@@ -6,6 +6,7 @@ import {
   PROVENANCE,
   CONFIDENCE_BANDS,
   getAqiZone,
+  tierLabel,
 } from './constants'
 import { formatDate, formatTime, formatDateTime } from './time'
 import { sampleFlags } from './sampleFlags'
@@ -168,6 +169,15 @@ function bandLabel(key) {
   return CONFIDENCE_BANDS.find((b) => b.key === key)?.label ?? 'Unknown confidence'
 }
 
+function TrashIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V6" />
+      <path d="M10 11v6M14 11v6" />
+    </svg>
+  )
+}
+
 /**
  * How old the station's reading was at the moment the sample was captured.
  *
@@ -225,7 +235,7 @@ function SampleDetail({ sample, display }) {
       {selection?.distanceKm != null && (
         <DetailRow label="Distance">{selection.distanceKm}km</DetailRow>
       )}
-      {selection?.tier && <DetailRow label="Tier">{selection.tier}</DetailRow>}
+      {selection?.tier && <DetailRow label="Sensor grade">{tierLabel(selection.tier)}</DetailRow>}
       {(selection?.confidenceBand || sample.confidenceBand) && (
         <DetailRow label="Confidence">
           {bandLabel(selection?.confidenceBand ?? sample.confidenceBand)}
@@ -403,6 +413,7 @@ function SwipeRow({
       {dragX < 0 && (
         <div className="absolute inset-y-0 right-0 flex w-[88px] items-center justify-center bg-zone-unhealthy">
           <button
+            aria-label="Delete this sample"
             onClick={() => {
               if (window.confirm('Delete this sample? This cannot be undone.')) {
                 onDelete(sample.id)
@@ -410,9 +421,9 @@ function SwipeRow({
                 setDragX(0)
               }
             }}
-            className="px-4 text-sm font-medium text-white"
+            className="p-4 text-white"
           >
-            Delete
+            <TrashIcon />
           </button>
         </div>
       )}
