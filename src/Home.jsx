@@ -90,7 +90,17 @@ function MoreIcon() {
  * the way out, so there is nothing coordinate-shaped for a later render, a
  * serialiser, or a bug to leak.
  */
-function AreaPicker({ id, districts, heading, submitLabel, onSubmit, onCancel, resolveAt, kawasanAt }) {
+function AreaPicker({
+  id,
+  districts,
+  heading,
+  submitLabel,
+  takenLabels = [],
+  onSubmit,
+  onCancel,
+  resolveAt,
+  kawasanAt,
+}) {
   const [key, setKey] = useState('')
   const [detected, setDetected] = useState(null) // a GPS-resolved attachment, if any
   const [locating, setLocating] = useState(false)
@@ -116,6 +126,12 @@ function AreaPicker({ id, districts, heading, submitLabel, onSubmit, onCancel, r
       const attachment = resolveAt(lat, lng, COORDINATE_SOURCE.GPS)
       if (!attachment.stationUid) {
         setError(`No monitoring station within ${MAX_STATION_RADIUS_KM}km of you.`)
+        setKey('')
+        setDetected(null)
+      } else if (kawasan && takenLabels.includes(kawasan.kecamatan)) {
+        // The dropdown greys out areas already in the list; detection has to
+        // honour the same rule or it becomes a way around it.
+        setError(`${kawasan.kecamatan} is already one of your areas.`)
         setKey('')
         setDetected(null)
       } else {
@@ -146,16 +162,19 @@ function AreaPicker({ id, districts, heading, submitLabel, onSubmit, onCancel, r
 
   return (
     <>
-      <label className="text-xs text-text-secondary" htmlFor={id}>
-        {heading}
-      </label>
-      <div className="mt-1.5">
+      {heading && (
+        <label className="text-xs text-text-secondary" htmlFor={id}>
+          {heading}
+        </label>
+      )}
+      <div className={heading ? 'mt-1.5' : ''}>
         <KawasanSelect
           id={id}
           districts={districts}
           value={key}
           onChange={handleChange}
           locating={locating}
+          takenLabels={takenLabels}
         />
       </div>
 
@@ -197,6 +216,7 @@ function AreaCard({
   area,
   districts,
   sampleCount,
+  takenLabels,
   expanded,
   onToggleExpand,
   onReplace,
@@ -214,76 +234,16 @@ function AreaCard({
   const selection = station.stationSelection ?? null
   const notes = areaNotes(selection)
 
-  return (
-    <div className="relative rounded-lg border border-border bg-surface p-3">
+  // The card as it reads when nothing is being managed. Extracted because it is
+  // rendered twice: once for real, and once dimmed behind the manage panel.
+  const reading = (
+    <>
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          {expanded ? (
-            <AreaPicker
-              id={`kawasan-${station.id}`}
-              districts={districts}
-              heading="Replace with another area"
-              submitLabel="Replace"
-              resolveAt={resolveAt}
-              kawasanAt={kawasanAt}
-              onSubmit={async (next) => {
-                await onReplace(area, next)
-                onToggleExpand()
-              }}
-              onCancel={onToggleExpand}
-            />
-          ) : (
-            <span className="block truncate text-sm text-text-secondary">{station.label}</span>
-          )}
-        </div>
-        <div className="flex shrink-0 items-center gap-0.5">
-          {expanded && (
-            <IconButton
-              label={`${retiring ? 'Retire' : 'Remove'} ${station.label}`}
-              onClick={() => setConfirmingDelete((v) => !v)}
-            >
-              <TrashIcon />
-            </IconButton>
-          )}
-          <IconButton label={`Options for ${station.label}`} onClick={onToggleExpand}>
-            <MoreIcon />
-          </IconButton>
-        </div>
+        <span className="min-w-0 flex-1 truncate text-sm text-text-secondary">{station.label}</span>
+        <IconButton label={`Options for ${station.label}`} onClick={onToggleExpand}>
+          <MoreIcon />
+        </IconButton>
       </div>
-
-      {/* Confirmation in the page rather than window.confirm. A native dialog is
-          suppressible — browsers offer "prevent additional dialogs", and some
-          embedded and standalone-PWA contexts refuse it outright — and when it
-          is suppressed it returns false, so the button silently does nothing and
-          reads as broken.
-
-          It covers the card it belongs to at near-full opacity, so the decision
-          is the only thing to attend to and it is unambiguous which area is
-          about to go. */}
-      {expanded && confirmingDelete && (
-        <div className="absolute inset-0 z-10 flex flex-col justify-center rounded-lg bg-surface/90 p-4 backdrop-blur-[2px]">
-          <p className="text-sm font-medium">
-            {retiring ? `Retire ${station.label}?` : `Remove ${station.label}?`}
-          </p>
-          {retiring && (
-            <p className="mt-1 text-xs text-text-secondary">Past logged samples will not be deleted.</p>
-          )}
-          <div className="mt-3 flex items-center gap-3">
-            <button
-              onClick={() => {
-                setConfirmingDelete(false)
-                onDelete(area, sampleCount)
-              }}
-              className="rounded-lg bg-zone-unhealthy px-4 py-2 text-sm font-semibold text-white"
-            >
-              {retiring ? 'Retire' : 'Remove'}
-            </button>
-            <button onClick={() => setConfirmingDelete(false)} className="text-sm text-text-secondary">
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
 
       {station.snapshotUnusable ? (
         <div className="mt-1 text-sm text-text-secondary">No current reading</div>
@@ -299,14 +259,14 @@ function AreaCard({
           {/* Line 2: who is reporting, and how far away. The raw µg/m³ is gone
               from this view — the AQI directly above is computed from it, so
               showing both was showing one number twice. The machine prefix is
-              stripped; it lives in the detail panel with the UID. */}
+              stripped; it lives in the detail list behind the three-dot. */}
           {typeof station.aqi === 'number' && (
             <div className="mt-0.5 text-xs text-text-secondary">
               {stationDisplayName(station.stationName)}
-              {station.stationSelection?.distanceKm != null && (
+              {selection?.distanceKm != null && (
                 <span className="font-mono-data">
                   {' · '}
-                  {distanceLabel(station.stationSelection.distanceKm, area?.coordinateSource)}
+                  {distanceLabel(selection.distanceKm, area?.coordinateSource)}
                 </span>
               )}
             </div>
@@ -318,6 +278,7 @@ function AreaCard({
           {typeof station.aqi === 'number' && notes.length > 0 && (
             <div className="mt-0.5 text-[11px] text-zone-moderate">{notes.join(' · ')}</div>
           )}
+
           {station.noCoverage && (
             <div className="mt-1 text-xs text-zone-moderate">
               No monitoring station within {MAX_STATION_RADIUS_KM}km. Samples here log without AQI.
@@ -325,43 +286,122 @@ function AreaCard({
           )}
         </>
       )}
+    </>
+  )
 
-      {/* The full station metadata the two-line view drops. It lives behind the
-          same three-dot the management controls do, so nothing is lost — only
-          moved out of the glance. */}
-      {expanded && typeof station.aqi === 'number' && (
-        <dl className="mt-3 border-t border-border pt-2 font-mono-data text-[11px] text-text-secondary">
-          <div className="flex justify-between gap-3 py-0.5">
-            <dt>Station</dt>
-            <dd className="text-right">{station.stationName}</dd>
+  return (
+    <div className="relative overflow-hidden rounded-lg border border-border bg-surface p-3">
+      {!expanded && reading}
+
+      {expanded && (
+        <>
+          {/* The card, blacked out. Absolutely positioned so the panel in flow
+              below sets the card's height — otherwise an overlay tall enough for
+              a dropdown would be clipped by a two-line card. */}
+          <div aria-hidden className="pointer-events-none absolute inset-0 p-3 opacity-10">
+            {reading}
           </div>
-          <div className="flex justify-between gap-3 py-0.5">
-            <dt>UID</dt>
-            <dd className="min-w-0 break-all text-right">{station.stationUid ?? '—'}</dd>
+
+          <div className="relative">
+            {confirmingDelete ? (
+              <>
+                <p className="text-sm font-medium">
+                  {retiring ? `Retire ${station.label}?` : `Remove ${station.label}?`}
+                </p>
+                {retiring && (
+                  <p className="mt-1 text-xs text-text-secondary">
+                    Past logged samples will not be deleted.
+                  </p>
+                )}
+                <div className="mt-3 flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      setConfirmingDelete(false)
+                      onDelete(area, sampleCount)
+                    }}
+                    className="rounded-lg bg-zone-unhealthy px-4 py-2 text-sm font-semibold text-white"
+                  >
+                    {retiring ? 'Retire' : 'Remove'}
+                  </button>
+                  <button
+                    onClick={() => setConfirmingDelete(false)}
+                    className="text-sm text-text-secondary"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-medium">Replace {station.label}?</p>
+                  <IconButton
+                    label={`${retiring ? 'Retire' : 'Remove'} ${station.label}`}
+                    onClick={() => setConfirmingDelete(true)}
+                  >
+                    <TrashIcon />
+                  </IconButton>
+                </div>
+                {retiring && (
+                  <p className="mt-1 text-xs text-text-secondary">
+                    Past logged samples will not be deleted.
+                  </p>
+                )}
+                <div className="mt-2">
+                  <AreaPicker
+                    id={`kawasan-${station.id}`}
+                    districts={districts}
+                    takenLabels={takenLabels}
+                    submitLabel="Replace"
+                    resolveAt={resolveAt}
+                    kawasanAt={kawasanAt}
+                    onSubmit={async (next) => {
+                      await onReplace(area, next)
+                      onToggleExpand()
+                    }}
+                    onCancel={onToggleExpand}
+                  />
+                </div>
+
+                {/* The metadata the two-line card drops. Subordinate to the
+                    decision above, but reachable — this is the only place it
+                    lives now. */}
+                {typeof station.aqi === 'number' && (
+                  <dl className="mt-3 border-t border-border pt-2 font-mono-data text-[11px] text-text-secondary">
+                    <div className="flex justify-between gap-3 py-0.5">
+                      <dt>Station</dt>
+                      <dd className="text-right">{station.stationName}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3 py-0.5">
+                      <dt>UID</dt>
+                      <dd className="min-w-0 break-all text-right">{station.stationUid ?? '—'}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3 py-0.5">
+                      <dt>Distance</dt>
+                      <dd>{distanceLabel(selection?.distanceKm, area?.coordinateSource) ?? '—'}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3 py-0.5">
+                      <dt>Sensor grade</dt>
+                      <dd>{tierLabel(selection?.tier)}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3 py-0.5">
+                      <dt>Confidence</dt>
+                      <dd>{bandLabel(selection?.confidenceBand)}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3 py-0.5">
+                      <dt>PM2.5 raw</dt>
+                      <dd>{station.pm25 != null ? `${station.pm25} µg/m³` : '—'}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3 py-0.5">
+                      <dt>Reading age</dt>
+                      <dd>{selection?.readingAgeHours != null ? `${selection.readingAgeHours}h` : '—'}</dd>
+                    </div>
+                  </dl>
+                )}
+              </>
+            )}
           </div>
-          <div className="flex justify-between gap-3 py-0.5">
-            <dt>Distance</dt>
-            <dd>{distanceLabel(selection?.distanceKm, area?.coordinateSource) ?? '—'}</dd>
-          </div>
-          <div className="flex justify-between gap-3 py-0.5">
-            <dt>Sensor grade</dt>
-            <dd>{tierLabel(selection?.tier)}</dd>
-          </div>
-          <div className="flex justify-between gap-3 py-0.5">
-            <dt>Confidence</dt>
-            <dd>{bandLabel(selection?.confidenceBand)}</dd>
-          </div>
-          <div className="flex justify-between gap-3 py-0.5">
-            <dt>PM2.5 raw</dt>
-            <dd>{station.pm25 != null ? `${station.pm25} µg/m³` : '—'}</dd>
-          </div>
-          <div className="flex justify-between gap-3 py-0.5">
-            <dt>Reading age</dt>
-            <dd>
-              {selection?.readingAgeHours != null ? `${selection.readingAgeHours}h` : '—'}
-            </dd>
-          </div>
-        </dl>
+        </>
       )}
     </div>
   )
@@ -438,7 +478,6 @@ export default function Home({
   hasLocations,
   onStartCapture,
   onOpenLog,
-  onOpenLocations,
 }) {
   const isDemo = demo.active
   const sensorsReady = orientation.state === ORIENTATION_STATE.GRANTED
@@ -516,6 +555,11 @@ export default function Home({
     const interval = setInterval(() => setNow(new Date()), 60 * 1000)
     return () => clearInterval(interval)
   }, [])
+
+  // Areas already in the list. Passed to every picker so the same kawasan
+  // cannot be added twice — a second card for one place would show a duplicate
+  // reading and split its samples across two identities for no reason.
+  const takenLabels = locationsApi.activeLocations.map((l) => l.label)
 
   const goodStation = aqi.stations.find((s) => typeof s.aqi === 'number' && s.aqi <= 50)
   // One clock drives both the display and the window state. The demo's zone
@@ -602,6 +646,7 @@ export default function Home({
                 area={locationsApi.getLocationById(station.id)}
                 districts={stationsApi?.districts ?? []}
                 sampleCount={log.samples.filter((s) => s.locationId === station.id).length}
+                takenLabels={takenLabels}
                 expanded={expandedAreaId === station.id}
                 onToggleExpand={() =>
                   setExpandedAreaId((id) => (id === station.id ? null : station.id))
@@ -622,6 +667,7 @@ export default function Home({
                   districts={stationsApi?.districts ?? []}
                   heading="Add an area"
                   submitLabel="Add area"
+                  takenLabels={takenLabels}
                   resolveAt={resolveAt}
                   kawasanAt={kawasanAt}
                   onSubmit={handleAddArea}

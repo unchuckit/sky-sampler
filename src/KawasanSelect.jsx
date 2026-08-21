@@ -24,7 +24,10 @@ export default function KawasanSelect({
   id,
   placeholder = 'Select',
   locating = false,
+  takenLabels = [],
 }) {
+  const takenSet = useMemo(() => new Set(takenLabels), [takenLabels])
+
   const byKota = useMemo(() => {
     const groups = new Map()
     for (const d of districts) {
@@ -58,11 +61,24 @@ export default function KawasanSelect({
         <option value={USE_MY_LOCATION}>Use my location</option>
         {byKota.map(([kota, list]) => (
           <optgroup key={kota} label={kota}>
-            {list.map((d) => (
-              <option key={districtKey(d)} value={districtKey(d)}>
-                {d.kecamatan}
-              </option>
-            ))}
+            {list.map((d) => {
+              // An area already in the list is shown but not selectable —
+              // greyed and labelled, rather than hidden. Removing it outright
+              // would leave someone hunting for a kawasan they can see on a
+              // card, with nothing explaining where it went.
+              const taken = takenSet.has(d.kecamatan)
+              return (
+                <option
+                  key={districtKey(d)}
+                  value={districtKey(d)}
+                  disabled={taken}
+                  className={taken ? 'text-text-secondary' : undefined}
+                >
+                  {d.kecamatan}
+                  {taken ? ' — already added' : ''}
+                </option>
+              )
+            })}
           </optgroup>
         ))}
       </select>

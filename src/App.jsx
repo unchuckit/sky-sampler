@@ -3,7 +3,6 @@ import Home from './Home'
 import CaptureFlow from './CaptureFlow'
 import SaveEntry from './SaveEntry'
 import LogView from './LogView'
-import LocationsView from './LocationsView'
 import DemoPill from './DemoPill'
 import { useAQI } from './useAQI'
 import { useStations } from './useStations'
@@ -164,7 +163,6 @@ export default function App() {
             setView('capture')
           }}
           onOpenLog={() => setView('log')}
-          onOpenLocations={() => setView('locations')}
         />
       )}
 
@@ -207,15 +205,6 @@ export default function App() {
         />
       )}
 
-      {view === 'locations' && (
-        <LocationsView
-          locationsApi={locationsApi}
-          aqi={aqi}
-          stationsApi={stationsApi}
-          log={log}
-          onBack={() => setView('home')}
-        />
-      )}
 
       <Toast message={toast} />
       <DemoPill demo={demo} />
