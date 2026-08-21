@@ -5,6 +5,7 @@ import { ORIENTATION_STATE } from './useOrientation'
 import { computeSkyGeometry, isGeometryCompliant, geometryWarnings } from './sunGeometry'
 import { geometryAdjustedHex, GEOMETRY_CORRECTION_MODEL } from './geometryCorrection'
 import { getCurrentPosition } from './useLocations'
+import { DEMO_REFERENCE_POINT } from './demoStationSet'
 
 function luminance(hex) {
   const [r, g, b] = hexToRgb(hex)
@@ -237,27 +238,28 @@ export default function CaptureFlow({
       setLiveGeometry(null)
       return
     }
-    // On stage the phone points at a projector, not the sky, so real sensors
-    // would report a non-compliant frame for reasons unrelated to the talk.
-    if (demoGeometry) {
-      setLiveGeometry(demoGeometry)
-      return
-    }
+    // Live from the real sensors in every mode, demo included — the readout is
+    // the feature being shown, and a frozen number does not demonstrate that
+    // aiming changes anything. Only the SAVED value is fixed in demo; see
+    // captureGeometry.
     const id = setInterval(() => {
       const reading = getReading()
-      const position = positionRef.current
+      // Demo has no GPS fix to work from, so the sun is placed against a
+      // Jakarta anchor and the zone's own clock. The heading and tilt are still
+      // the device's, so the readout moves as the phone moves.
+      const position = demoGeometry ? DEMO_REFERENCE_POINT : positionRef.current
       setLiveGeometry(
         computeSkyGeometry({
           heading: reading.heading,
           beta: reading.beta,
           lat: position?.lat,
           lng: position?.lng,
-          date: new Date(),
+          date: demoGeometry && demo?.demoNow ? demo.demoNow : new Date(),
         }),
       )
     }, 100)
     return () => clearInterval(id)
-  }, [step, cameraError, getReading, demoGeometry])
+  }, [step, cameraError, getReading, demoGeometry, demo?.demoNow])
 
   const liveWarning = useMemo(() => geometryWarnings(liveGeometry)[0] ?? null, [liveGeometry])
 
@@ -268,6 +270,12 @@ export default function CaptureFlow({
    * moved.
    */
   const captureGeometry = useCallback(async () => {
+    // Demo saves the zone's fixed geometry rather than whatever the phone was
+    // doing. The live readout above stays real, so the two can disagree at the
+    // moment of capture — that is the intended trade: the readout demonstrates
+    // that aiming matters, while the sample that lands in the log is a clean
+    // one instead of being flagged "Off-angle" because the phone was pointed
+    // at a projector.
     if (demoGeometry) {
       setSkyGeometry(demoGeometry)
       return demoGeometry

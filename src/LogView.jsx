@@ -307,18 +307,27 @@ function SwipeRow({
     } catch {
       // Drag still works, it just stops tracking outside the element.
     }
-    startRef.current = e.clientX
+    startRef.current = { x: e.clientX, y: e.clientY }
     baseRef.current = dragX
     draggingRef.current = true
     movedRef.current = false
   }
   function onPointerMove(e) {
     if (!draggingRef.current) return
-    const delta = e.clientX - startRef.current
-    if (Math.abs(delta) > TAP_SLOP) movedRef.current = true
-    if (!movedRef.current) return
+    const dx = e.clientX - startRef.current.x
+    const dy = e.clientY - startRef.current.y
+
+    // Slop is measured in BOTH axes. Checking only the horizontal delta meant a
+    // vertical scroll with a finger resting on a card registered as a tap —
+    // dx stays near zero while the page moves — so scrolling the log kept
+    // toggling whichever card you happened to start on.
+    if (Math.hypot(dx, dy) > TAP_SLOP) movedRef.current = true
+
+    // Only a horizontal intent drags the row. A vertical one is the page
+    // scrolling, which touchAction: pan-y already allows.
+    if (Math.abs(dx) <= TAP_SLOP) return
     e.preventDefault()
-    setDragX(Math.max(-88, Math.min(0, baseRef.current + delta)))
+    setDragX(Math.max(-88, Math.min(0, baseRef.current + dx)))
   }
   function onPointerUp() {
     if (!draggingRef.current) return
@@ -329,6 +338,14 @@ function SwipeRow({
       onToggleExpand()
       return
     }
+    setDragX((x) => (x < -44 ? -88 : 0))
+  }
+  // Never a tap. The browser fires this when it takes the gesture over for a
+  // native scroll, and routing it through onPointerUp meant a hijacked scroll
+  // toggled the card exactly like a deliberate press.
+  function onPointerCancel() {
+    draggingRef.current = false
+    movedRef.current = false
     setDragX((x) => (x < -44 ? -88 : 0))
   }
 
@@ -362,7 +379,7 @@ function SwipeRow({
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        onPointerCancel={onPointerCancel}
         role="button"
         tabIndex={0}
         aria-expanded={expanded}

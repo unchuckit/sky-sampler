@@ -23,6 +23,22 @@ import { tierForStationName } from './stations.js'
 export const AQI_SPREAD = 5
 
 /**
+ * A Jakarta anchor for the demo's LIVE geometry readout only.
+ *
+ * The readout needs some position to put the sun against, and demo mode does
+ * not ask for a real fix — a location prompt mid-talk is the last thing anyone
+ * wants. This is the centroid of the frozen set, so it is derived from real
+ * station coordinates rather than being another number typed into a file, and
+ * it is nowhere near precise enough to describe a person.
+ *
+ * It never reaches a saved sample: a demo capture stores DEMO_ZONE_GEOMETRY.
+ */
+export const DEMO_REFERENCE_POINT = {
+  lat: DEMO_STATION_ROWS.reduce((sum, r) => sum + r.lat, 0) / DEMO_STATION_ROWS.length,
+  lng: DEMO_STATION_ROWS.reduce((sum, r) => sum + r.lng, 0) / DEMO_STATION_ROWS.length,
+}
+
+/**
  * THE ONE FABRICATED FACT IN THE STATION SET, and it is deliberate.
  *
  * Every real station reports within 2 hours, so nothing in the frozen set ever
