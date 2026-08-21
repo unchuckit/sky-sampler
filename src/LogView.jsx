@@ -536,11 +536,14 @@ export default function LogView({ log, aqiStations, locations, display, attribut
           </div>
 
           <div className="mt-3 flex flex-wrap gap-1.5">
+            {/* One border colour for every chip. Coverage is carried by the
+                ✓/○ marker and by the text weight, not by a colour — the same
+                reason the sample cards stopped announcing "Tier A · High". */}
             {stats.zoneCoverage.map((zone) => (
               <span
                 key={zone.key}
-                className={`rounded-full border px-2 py-1 text-xs ${
-                  zone.covered ? 'border-zone-good text-zone-good' : 'border-border text-text-secondary'
+                className={`rounded-full border border-border px-2 py-1 text-xs ${
+                  zone.covered ? 'text-text' : 'text-text-secondary'
                 }`}
               >
                 {zone.covered ? '✓' : '○'} {zone.label}

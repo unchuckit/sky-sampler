@@ -183,22 +183,35 @@ function projectStation(s) {
   }
 }
 
-// Observed in CI: an occasional UND_ERR_CONNECT_TIMEOUT reaching this host,
-// with a successful fetch immediately before and after — i.e. an intermittent
-// connectivity blip, not a standing block (a deliberate block on this IP range
-// would fail every run, not every other one). A bounded retry is the correct
-// response to that signature; retrying would not help a 403 or a malformed
-// payload, which is why only the network fetch itself is retried here, not the
-// parse/validate steps below.
+// Observed in CI: an occasional UND_ERR_CONNECT_TIMEOUT reaching this host, and
+// separately an occasional HTTP 500, both with successful fetches immediately
+// before and after — i.e. intermittent trouble on their side, not a standing
+// block (a deliberate block on this IP range would fail every run, not every
+// other one).
+//
+// BOTH shapes are retried, because both are the same event seen from different
+// angles: a 500 is their server failing to answer, a timeout is it failing to
+// answer in time. An earlier version only caught the thrown case, so a 500 —
+// which `fetch` resolves rather than throws — fell straight through to a hard
+// failure and left the deployed snapshot to go stale.
+//
+// A 4xx is NOT retried. 403 means blocked and 404 means moved; hammering either
+// is pointless and rude. Parse and validation failures are not retried either,
+// which is why only the fetch is wrapped and not the steps below it.
+const RETRYABLE_STATUS = (status) => status >= 500 || status === 429
+
 async function fetchWithRetry(url, options, { retries = 2, delayMs = 3000 } = {}) {
   for (let attempt = 0; attempt <= retries; attempt++) {
+    const last = attempt === retries
     try {
-      return await fetch(url, options)
+      const res = await fetch(url, options)
+      if (!RETRYABLE_STATUS(res.status) || last) return res
+      console.log(`  fetch attempt ${attempt + 1} got HTTP ${res.status}, retrying...`)
     } catch (err) {
-      if (attempt === retries) throw err
+      if (last) throw err
       console.log(`  fetch attempt ${attempt + 1} failed (${err.cause?.code ?? err.message}), retrying...`)
-      await new Promise((r) => setTimeout(r, delayMs))
     }
+    await new Promise((r) => setTimeout(r, delayMs))
   }
 }
 

@@ -70,11 +70,42 @@ jobs:
       - name: Run tests
         run: npm test
 
-      # If this step fails the workflow stops here: no build, no deploy, and the
-      # previously deployed snapshot keeps serving. A parse failure can never
-      # reach users.
+      # A parse or validation failure never overwrites the good file — the script
+      # exits non-zero with the previous snapshot untouched.
+      #
+      # This step is allowed to fail without stopping the run, but ONLY because
+      # of the fallback below. Hard-failing here coupled every code change to a
+      # third-party server's uptime: while udara.jakarta.go.id was returning
+      # HTTP 500, no unrelated fix could reach production at all.
       - name: Snapshot Udara Jakarta
+        id: snapshot
+        continue-on-error: true
         run: npm run snapshot
+
+      # Reuse what is ALREADY LIVE rather than the copy committed in the repo.
+      # The committed one can easily be older than the deployed one, so building
+      # from it would push production backwards — replacing a two-hour-old
+      # snapshot with a two-day-old one. This guarantees a deploy never ships
+      # data staler than what it is replacing.
+      #
+      # If this also fails there is no known-good data to ship, so the run stops
+      # here and the existing deploy keeps serving.
+      - name: Reuse the deployed snapshot if the source was unreachable
+        if: steps.snapshot.outcome == 'failure'
+        run: |
+          echo "::warning::Source snapshot failed. Reusing the currently deployed snapshot so the build can proceed."
+          curl -fsS --retry 3 --retry-delay 5 \
+            https://sky-sampler.web.app/data/stations.json -o public/data/stations.json
+          node -e "
+            const s = require('./public/data/stations.json');
+            if (!Array.isArray(s.stations) || s.stations.length < 20) {
+              console.error('Deployed snapshot is unusable — refusing to build.');
+              process.exit(1);
+            }
+            const ageH = (Date.now() - new Date(s.fetchedAt)) / 3600000;
+            console.log('Reusing deployed snapshot from ' + s.fetchedAt + ' (' + ageH.toFixed(1) + 'h old, ' + s.stations.length + ' stations)');
+            if (ageH > 6) console.log('::warning::That snapshot is over 6h old, so the app will correctly report no current reading until the source recovers.');
+          "
 
       - name: Build
         run: npm run build

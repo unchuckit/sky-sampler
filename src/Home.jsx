@@ -10,11 +10,25 @@ import { ORIENTATION_STATE } from './useOrientation'
 import { formatTime } from './time'
 import { DemoSettingsRow } from './DemoPill'
 import Toggle from './Toggle'
-import KawasanSelect, { findDistrict } from './KawasanSelect'
-import { COORDINATE_SOURCE } from './useLocations'
+import KawasanSelect, { findDistrict, districtKey, USE_MY_LOCATION } from './KawasanSelect'
+import { COORDINATE_SOURCE, getCurrentPosition } from './useLocations'
+import { haversineKm } from './stationSelection'
 
 function bandLabel(key) {
   return CONFIDENCE_BANDS.find((b) => b.key === key)?.label ?? 'Unknown confidence'
+}
+
+/**
+ * A district-centroid distance is measured from the centroid, not from wherever
+ * the person actually stands, so it is prefixed to read as an estimate.
+ *
+ * Without this, a kecamatan with a single station puts the centroid exactly on
+ * that station and the card reads a bare "0km" — which claims the person is
+ * standing inside the instrument. Same treatment as the Locations screen.
+ */
+function distanceLabel(distanceKm, source) {
+  if (distanceKm == null) return null
+  return source === COORDINATE_SOURCE.DISTRICT_CENTROID ? `~${distanceKm}km` : `${distanceKm}km`
 }
 
 function AqiPill({ zone, aqi }) {
@@ -63,6 +77,110 @@ function MoreIcon() {
 }
 
 /**
+ * Choose an area, either by picking a kawasan or by detecting one.
+ *
+ * Shared by "add" and "replace" so the two cannot drift apart — they are the
+ * same decision with a different verb on the button.
+ *
+ * COORDINATES NEVER REACH STATE. "Use my location" resolves the fix to a
+ * station and a kawasan name inside one async function and drops the lat/lng on
+ * the way out, so there is nothing coordinate-shaped for a later render, a
+ * serialiser, or a bug to leak.
+ */
+function AreaPicker({ id, districts, heading, submitLabel, onSubmit, onCancel, resolveAt, kawasanAt }) {
+  const [key, setKey] = useState('')
+  const [detected, setDetected] = useState(null) // a GPS-resolved attachment, if any
+  const [locating, setLocating] = useState(false)
+  const [error, setError] = useState(null)
+  const [busy, setBusy] = useState(false)
+
+  async function handleChange(value) {
+    setError(null)
+    if (value !== USE_MY_LOCATION) {
+      // A hand-picked kawasan resolves from its centroid at submit time.
+      setKey(value)
+      setDetected(null)
+      return
+    }
+
+    setLocating(true)
+    try {
+      const { lat, lng } = await getCurrentPosition()
+      const kawasan = kawasanAt(lat, lng)
+      // Resolved from the actual fix rather than from the kawasan centroid:
+      // the centroid is only an approximation of where someone stands, and
+      // using it would throw away the precision GPS just gave us.
+      const attachment = resolveAt(lat, lng, COORDINATE_SOURCE.GPS)
+      if (!attachment.stationUid) {
+        setError(`No monitoring station within ${MAX_STATION_RADIUS_KM}km of you.`)
+        setKey('')
+        setDetected(null)
+      } else {
+        setKey(kawasan ? districtKey(kawasan) : '')
+        setDetected({ label: kawasan?.kecamatan ?? 'My location', ...attachment })
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLocating(false)
+    }
+  }
+
+  async function submit() {
+    setBusy(true)
+    try {
+      if (detected) {
+        await onSubmit(detected)
+        return
+      }
+      const d = findDistrict(districts, key)
+      if (!d) return
+      await onSubmit({ label: d.kecamatan, ...resolveAt(d.lat, d.lng, COORDINATE_SOURCE.DISTRICT_CENTROID) })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <>
+      <label className="text-xs text-text-secondary" htmlFor={id}>
+        {heading}
+      </label>
+      <div className="mt-1.5">
+        <KawasanSelect
+          id={id}
+          districts={districts}
+          value={key}
+          onChange={handleChange}
+          locating={locating}
+        />
+      </div>
+
+      {detected && (
+        <p className="mt-1.5 text-[11px] text-text-secondary">
+          Found you in {detected.label} — {detected.stationName}
+          {detected.distanceKm != null ? ` · ${detected.distanceKm}km` : ''}
+        </p>
+      )}
+      {error && <p className="mt-1.5 text-[11px] text-zone-moderate">{error}</p>}
+
+      <div className="mt-3 flex items-center gap-3">
+        <button
+          disabled={(!key && !detected) || busy || locating}
+          onClick={submit}
+          className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black disabled:opacity-40"
+        >
+          {busy ? 'Saving…' : submitLabel}
+        </button>
+        <button onClick={onCancel} className="text-sm text-text-secondary">
+          Cancel
+        </button>
+      </div>
+    </>
+  )
+}
+
+/**
  * One sampling area, with its current reading and its own management controls.
  *
  * Area management lives on the card rather than behind a separate screen: the
@@ -71,52 +189,44 @@ function MoreIcon() {
  * card reads as a reading first and a settings surface second. Expansion state
  * is owned by the parent so only one card is ever open at a time.
  */
-function AreaCard({ station, area, districts, sampleCount, expanded, onToggleExpand, onReplace, onDelete }) {
-  const [pendingKawasan, setPendingKawasan] = useState('')
-  const [busy, setBusy] = useState(false)
+function AreaCard({
+  station,
+  area,
+  districts,
+  sampleCount,
+  expanded,
+  onToggleExpand,
+  onReplace,
+  onDelete,
+  resolveAt,
+  kawasanAt,
+}) {
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   useEffect(() => {
-    if (!expanded) setPendingKawasan('')
+    if (!expanded) setConfirmingDelete(false)
   }, [expanded])
 
-  async function applyReplace() {
-    const district = findDistrict(districts, pendingKawasan)
-    if (!district) return
-    if (
-      sampleCount > 0 &&
-      !window.confirm(
-        `Replace ${area?.label ?? 'this area'} with ${district.kecamatan}? ` +
-          `Its ${sampleCount} logged sample${sampleCount === 1 ? '' : 's'} keep the station and AQI ` +
-          'recorded at capture time.',
-      )
-    ) {
-      return
-    }
-    setBusy(true)
-    await onReplace(area, district)
-    setBusy(false)
-    onToggleExpand()
-  }
+  const retiring = sampleCount > 0
 
   return (
     <div className="rounded-lg border border-border bg-surface p-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           {expanded ? (
-            <>
-              <label className="text-xs text-text-secondary" htmlFor={`kawasan-${station.id}`}>
-                Replace with another area
-              </label>
-              <div className="mt-1.5">
-                <KawasanSelect
-                  id={`kawasan-${station.id}`}
-                  districts={districts}
-                  value={pendingKawasan}
-                  onChange={setPendingKawasan}
-                  placeholder="Select"
-                />
-              </div>
-            </>
+            <AreaPicker
+              id={`kawasan-${station.id}`}
+              districts={districts}
+              heading="Replace with another area"
+              submitLabel="Replace"
+              resolveAt={resolveAt}
+              kawasanAt={kawasanAt}
+              onSubmit={async (next) => {
+                await onReplace(area, next)
+                onToggleExpand()
+              }}
+              onCancel={onToggleExpand}
+            />
           ) : (
             <span className="block truncate text-sm text-text-secondary">{station.label}</span>
           )}
@@ -124,8 +234,8 @@ function AreaCard({ station, area, districts, sampleCount, expanded, onToggleExp
         <div className="flex shrink-0 items-center gap-0.5">
           {expanded && (
             <IconButton
-              label={`${sampleCount > 0 ? 'Retire' : 'Remove'} ${station.label}`}
-              onClick={() => onDelete(area, sampleCount)}
+              label={`${retiring ? 'Retire' : 'Remove'} ${station.label}`}
+              onClick={() => setConfirmingDelete((v) => !v)}
             >
               <TrashIcon />
             </IconButton>
@@ -135,6 +245,35 @@ function AreaCard({ station, area, districts, sampleCount, expanded, onToggleExp
           </IconButton>
         </div>
       </div>
+
+      {/* Confirmation in the page rather than window.confirm. A native dialog is
+          suppressible — browsers offer "prevent additional dialogs", and some
+          embedded and standalone-PWA contexts refuse it outright — and when it
+          is suppressed it returns false, so the button silently does nothing and
+          reads as broken. */}
+      {expanded && confirmingDelete && (
+        <div className="mt-2 rounded-lg border border-border bg-bg p-2.5">
+          <p className="text-xs">
+            {retiring
+              ? `Retire ${station.label}? Its ${sampleCount} logged sample${sampleCount === 1 ? '' : 's'} stay in the log.`
+              : `Remove ${station.label}?`}
+          </p>
+          <div className="mt-2 flex items-center gap-3">
+            <button
+              onClick={() => {
+                setConfirmingDelete(false)
+                onDelete(area, sampleCount)
+              }}
+              className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold"
+            >
+              {retiring ? 'Retire' : 'Remove'}
+            </button>
+            <button onClick={() => setConfirmingDelete(false)} className="text-xs text-text-secondary">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {station.snapshotUnusable ? (
         <div className="mt-1 text-sm text-text-secondary">No current reading</div>
@@ -155,8 +294,8 @@ function AreaCard({ station, area, districts, sampleCount, expanded, onToggleExp
           )}
           {typeof station.aqi === 'number' && station.stationSelection?.distanceKm != null && (
             <div className="mt-0.5 font-mono-data text-[11px] text-text-secondary">
-              {station.stationSelection.distanceKm}km · Tier {station.stationSelection.tier} ·{' '}
-              {bandLabel(station.stationSelection.confidenceBand)}
+              {distanceLabel(station.stationSelection.distanceKm, area?.coordinateSource)} · Tier{' '}
+              {station.stationSelection.tier} · {bandLabel(station.stationSelection.confidenceBand)}
             </div>
           )}
           {station.noCoverage && (
@@ -167,20 +306,6 @@ function AreaCard({ station, area, districts, sampleCount, expanded, onToggleExp
         </>
       )}
 
-      {expanded && (
-        <div className="mt-3 flex items-center gap-3">
-          <button
-            disabled={!pendingKawasan || busy}
-            onClick={applyReplace}
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black disabled:opacity-40"
-          >
-            {busy ? 'Replacing…' : 'Replace'}
-          </button>
-          <button onClick={onToggleExpand} className="text-sm text-text-secondary">
-            Cancel
-          </button>
-        </div>
-      )}
     </div>
   )
 }
@@ -264,52 +389,70 @@ export default function Home({
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [notifPromptDismissed, setNotifPromptDismissed] = useState(false)
   const [addingArea, setAddingArea] = useState(false)
-  const [newKawasan, setNewKawasan] = useState('')
   const [expandedAreaId, setExpandedAreaId] = useState(null)
 
-  // Resolving a kawasan uses its centroid, which is then discarded — no
-  // coordinates are returned from here or written anywhere.
-  function resolveKawasan(district) {
-    const result = aqi.checkCoverage(district.lat, district.lng)
+  /**
+   * Resolve a coordinate to a station attachment, then forget the coordinate.
+   * Nothing coordinate-shaped is returned from here or written anywhere.
+   */
+  function resolveAt(lat, lng, source) {
+    const result = aqi.checkCoverage(lat, lng)
     const band = result?.selection?.confidenceBand ?? null
     return {
       stationUid: result?.chosen?.uid ?? null,
       stationName: result?.chosen?.name ?? null,
       distanceKm: result?.selection?.distanceKm ?? null,
-      // A centroid's own error is easily a kilometre, so it can never claim high.
-      confidenceBand: band === 'high' ? 'moderate' : band,
+      // A centroid's own error is easily a kilometre, so a centroid-derived
+      // area can never claim high confidence. A real GPS fix can.
+      confidenceBand:
+        source === COORDINATE_SOURCE.DISTRICT_CENTROID && band === 'high' ? 'moderate' : band,
       tier: result?.chosen?.tier ?? null,
-      coordinateSource: COORDINATE_SOURCE.DISTRICT_CENTROID,
+      coordinateSource: source,
     }
   }
 
-  function handleAddArea() {
-    const district = findDistrict(stationsApi?.districts ?? [], newKawasan)
-    if (!district) return
-    locationsApi.addLocation({ label: district.kecamatan, ...resolveKawasan(district) })
+  /**
+   * Which kawasan a coordinate sits in, judged by the nearest station.
+   *
+   * Station-nearest rather than centroid-nearest on purpose: a station is a
+   * real point with a known kecamatan, while a centroid is an average that can
+   * sit closer to a neighbouring district than to its own edge. This is a label
+   * for the area, not the basis of the reading — the reading comes from the GPS
+   * fix through the normal selection path.
+   */
+  function kawasanAt(lat, lng) {
+    let best = null
+    for (const s of stationsApi?.stations ?? []) {
+      if (!s.kecamatan) continue
+      const km = haversineKm(lat, lng, s.lat, s.lng)
+      if (!best || km < best.km) best = { km, kecamatan: s.kecamatan, kota: s.kota ?? 'Unknown' }
+    }
+    return best
+  }
+
+  function handleAddArea(next) {
+    locationsApi.addLocation(next)
     setAddingArea(false)
-    setNewKawasan('')
   }
 
   // Replacing repoints the area. Logged samples are unaffected: each one stored
-  // its own station, AQI and location label at capture time.
-  function handleReplaceArea(area, district) {
+  // its own station, AQI and location label at capture time, so this needs no
+  // confirmation — nothing is lost and replacing back undoes it.
+  function handleReplaceArea(area, next) {
     if (!area) return
-    locationsApi.renameLocation(area.id, district.kecamatan)
-    locationsApi.rebindLocation(area.id, resolveKawasan(district))
+    const { label, ...attachment } = next
+    locationsApi.renameLocation(area.id, label)
+    locationsApi.rebindLocation(area.id, attachment)
   }
 
+  // The confirmation happens on the card, in the page. By the time this runs
+  // the person has already confirmed.
   function handleDeleteArea(area, sampleCount) {
     if (!area) return
-    const message =
-      sampleCount > 0
-        ? `Retire ${area.label}? Its ${sampleCount} logged sample${sampleCount === 1 ? '' : 's'} stay in the log.`
-        : `Remove ${area.label}?`
-    if (window.confirm(message)) {
-      // Retire rather than delete when samples exist — a logged sample must
-      // never be orphaned from the place it was taken.
-      locationsApi.removeLocation(area.id, { hasSamples: sampleCount > 0 })
-    }
+    // Retire rather than delete when samples exist — a logged sample must never
+    // be orphaned from the place it was taken.
+    locationsApi.removeLocation(area.id, { hasSamples: sampleCount > 0 })
+    setExpandedAreaId(null)
   }
 
   useEffect(() => {
@@ -408,6 +551,8 @@ export default function Home({
                 }
                 onReplace={handleReplaceArea}
                 onDelete={handleDeleteArea}
+                resolveAt={resolveAt}
+                kawasanAt={kawasanAt}
               />
             ))
           )}
@@ -415,38 +560,16 @@ export default function Home({
           {locationsApi.activeLocations.length < 3 &&
             (addingArea ? (
               <div className="rounded-lg border border-accent/40 bg-surface p-3">
-                <label className="text-xs text-text-secondary" htmlFor="add-kawasan">
-                  Add a kawasan
-                </label>
-                <div className="mt-1.5">
-                  <KawasanSelect
-                    id="add-kawasan"
-                    districts={stationsApi?.districts ?? []}
-                    value={newKawasan}
-                    onChange={setNewKawasan}
-                  />
-                </div>
-                <div className="mt-3 flex items-center gap-3">
-                  <button
-                    disabled={!newKawasan}
-                    onClick={handleAddArea}
-                    className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black disabled:opacity-40"
-                  >
-                    Add area
-                  </button>
-                  <button
-                    onClick={() => {
-                      setAddingArea(false)
-                      setNewKawasan('')
-                    }}
-                    className="text-sm text-text-secondary"
-                  >
-                    Cancel
-                  </button>
-                </div>
-                <button onClick={onOpenLocations} className="mt-3 block text-xs text-accent">
-                  More options — use my location, rename, restore retired
-                </button>
+                <AreaPicker
+                  id="add-kawasan"
+                  districts={stationsApi?.districts ?? []}
+                  heading="Add an area"
+                  submitLabel="Add area"
+                  resolveAt={resolveAt}
+                  kawasanAt={kawasanAt}
+                  onSubmit={handleAddArea}
+                  onCancel={() => setAddingArea(false)}
+                />
               </div>
             ) : (
               <button
@@ -505,16 +628,21 @@ export default function Home({
             No samples yet — wait for a good sky day and hit Sample the sky.
           </p>
         ) : (
-          <div className="mt-2 flex gap-3 overflow-x-auto pb-1 pr-4">
+          // Uniform card width, with a long area name clipped rather than
+          // allowed to stretch the row. The strip is a glance at recent colour,
+          // so an even rhythm matters more here than the full name — which is
+          // one tap away in the log.
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-1 pr-4">
             {recent.map((s) => (
               <button
                 key={s.id}
                 onClick={onOpenLog}
-                className="flex shrink-0 flex-col items-start gap-1.5 rounded-lg border border-border bg-surface p-2 text-left"
+                title={s.location}
+                className="flex w-28 shrink-0 flex-col gap-1.5 rounded-lg border border-border bg-surface p-2 text-left"
               >
-                <div className="h-14 w-14 rounded" style={{ backgroundColor: s.averagedHex }} />
+                <div className="h-14 w-full rounded" style={{ backgroundColor: s.averagedHex }} />
                 <div className="font-mono-data text-xs">{s.aqi ?? '—'}</div>
-                <div className="max-w-[9rem] whitespace-normal break-words rounded-full bg-border px-2 py-0.5 text-[10px] text-text-secondary">
+                <div className="w-full truncate rounded-full bg-border px-2 py-0.5 text-[10px] text-text-secondary">
                   {s.location}
                 </div>
               </button>

@@ -8,8 +8,23 @@ import { useMemo } from 'react'
  * coverage — you cannot pick somewhere that would produce an area with no AQI
  * provenance. It also stays current as DKI adds or retires stations, with no
  * code change.
+ *
+ * "Use my location" sits in the same dropdown rather than beside it. Picking a
+ * kawasan and detecting one are the same decision — which area is this? — so
+ * they belong in the same control, and it keeps the choice to a single tap on a
+ * phone held one-handed outdoors.
  */
-export default function KawasanSelect({ districts, value, onChange, id, placeholder = 'Select a kawasan…' }) {
+
+export const USE_MY_LOCATION = '__use-my-location__'
+
+export default function KawasanSelect({
+  districts,
+  value,
+  onChange,
+  id,
+  placeholder = 'Select',
+  locating = false,
+}) {
   const byKota = useMemo(() => {
     const groups = new Map()
     for (const d of districts) {
@@ -31,10 +46,12 @@ export default function KawasanSelect({ districts, value, onChange, id, placehol
     <select
       id={id}
       value={value}
+      disabled={locating}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded border border-border bg-bg px-3 py-2 text-sm"
+      className="w-full rounded border border-border bg-bg px-3 py-2 text-sm disabled:opacity-60"
     >
-      <option value="">{placeholder}</option>
+      <option value="">{locating ? 'Finding your kawasan…' : placeholder}</option>
+      <option value={USE_MY_LOCATION}>Use my location</option>
       {byKota.map(([kota, list]) => (
         <optgroup key={kota} label={kota}>
           {list.map((d) => (
