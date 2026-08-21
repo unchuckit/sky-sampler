@@ -94,6 +94,7 @@ function AreaPicker({
   id,
   districts,
   heading,
+  ariaLabel,
   submitLabel,
   takenLabels = [],
   onSubmit,
@@ -175,6 +176,7 @@ function AreaPicker({
           onChange={handleChange}
           locating={locating}
           takenLabels={takenLabels}
+          ariaLabel={ariaLabel}
         />
       </div>
 
@@ -203,13 +205,20 @@ function AreaPicker({
 }
 
 /**
- * One sampling area, with its current reading and its own management controls.
+ * One sampling area: its current reading, its detail, and its controls.
+ *
+ * TWO SEPARATE GESTURES, because they are two separate intents.
+ *   Tapping the card    — "tell me more about this reading" → station detail
+ *   Tapping the 3-dot   — "change this area" → the manage overlay
+ *
+ * Folding both into one control meant the only way to read a station's UID was
+ * to open the screen for replacing it, which is a strange place to put
+ * reference information.
  *
  * Area management lives on the card rather than behind a separate screen: the
  * thing you want to change is right next to the reading that prompted you to
- * change it. Collapsed by default — only the three-dot button shows — so the
- * card reads as a reading first and a settings surface second. Expansion state
- * is owned by the parent so only one card is ever open at a time.
+ * change it. The manage overlay is owned by the parent so only one card is ever
+ * open at a time; detail is per-card, since reading two at once is reasonable.
  */
 function AreaCard({
   station,
@@ -225,24 +234,30 @@ function AreaCard({
   kawasanAt,
 }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [detailOpen, setDetailOpen] = useState(false)
 
   useEffect(() => {
-    if (!expanded) setConfirmingDelete(false)
+    if (!expanded) {
+      setConfirmingDelete(false)
+      return
+    }
+    // Managing collapses the detail, so the overlay always covers a card in the
+    // same compact state. Otherwise opening the menu on a tall card would leave
+    // the panel floating against a mostly-empty blackout.
+    setDetailOpen(false)
   }, [expanded])
 
   const retiring = sampleCount > 0
   const selection = station.stationSelection ?? null
   const notes = areaNotes(selection)
 
-  // The card as it reads when nothing is being managed. Extracted because it is
-  // rendered twice: once for real, and once dimmed behind the manage panel.
+  // The reading, without its controls — those are rendered once, above
+  // everything, so the three-dot stays put whatever the card is doing. This is
+  // rendered twice: once for real, and once dimmed behind the manage overlay.
   const reading = (
     <>
       <div className="flex items-start justify-between gap-2">
         <span className="min-w-0 flex-1 truncate text-sm text-text-secondary">{station.label}</span>
-        <IconButton label={`Options for ${station.label}`} onClick={onToggleExpand}>
-          <MoreIcon />
-        </IconButton>
       </div>
 
       {station.snapshotUnusable ? (
@@ -256,10 +271,18 @@ function AreaCard({
             <AqiPill zone={station.zone} aqi={station.aqi} />
           </div>
 
-          {/* Line 2: who is reporting, and how far away. The raw µg/m³ is gone
-              from this view — the AQI directly above is computed from it, so
-              showing both was showing one number twice. The machine prefix is
-              stripped; it lives in the detail list behind the three-dot. */}
+          {/* Line 2: who is reporting, how far away, and anything worth noting.
+              The raw µg/m³ is gone from this view — the AQI directly above is
+              computed from it, so showing both was showing one number twice.
+              The machine prefix is stripped; it lives in the detail behind a
+              tap on the card.
+              Caveats ride on this line instead of claiming one of their own, so
+              a flagged card is exactly as tall as a clean one and every card in
+              the column keeps the same height. Confidence, tier and recency are
+              still checked independently — they just join the line rather than
+              add to it. The separators stay in the line's own grey; only the
+              caveat itself takes the warning colour, so the eye lands on the
+              words and not the punctuation. */}
           {typeof station.aqi === 'number' && (
             <div className="mt-0.5 text-xs text-text-secondary">
               {stationDisplayName(station.stationName)}
@@ -269,14 +292,13 @@ function AreaCard({
                   {distanceLabel(selection.distanceKm, area?.coordinateSource)}
                 </span>
               )}
+              {notes.map((note) => (
+                <span key={note}>
+                  {' · '}
+                  <span className="text-zone-moderate">{note}</span>
+                </span>
+              ))}
             </div>
-          )}
-
-          {/* Line 3: only when something is worth noting. Confidence, tier and
-              recency are checked independently and joined with a middot, so the
-              card gains one line whether one caveat applies or all three. */}
-          {typeof station.aqi === 'number' && notes.length > 0 && (
-            <div className="mt-0.5 text-[11px] text-zone-moderate">{notes.join(' · ')}</div>
           )}
 
           {station.noCoverage && (
@@ -289,20 +311,99 @@ function AreaCard({
     </>
   )
 
+  // Everything the two-line card leaves out. Behind a tap on the card itself.
+  const detail = typeof station.aqi === 'number' && (
+    <dl className="mt-3 border-t border-border pt-2 font-mono-data text-[11px] text-text-secondary">
+      <div className="flex justify-between gap-3 py-0.5">
+        <dt>Station</dt>
+        <dd className="text-right">{station.stationName}</dd>
+      </div>
+      <div className="flex justify-between gap-3 py-0.5">
+        <dt>UID</dt>
+        <dd className="min-w-0 break-all text-right">{station.stationUid ?? '—'}</dd>
+      </div>
+      <div className="flex justify-between gap-3 py-0.5">
+        <dt>Distance</dt>
+        <dd>{distanceLabel(selection?.distanceKm, area?.coordinateSource) ?? '—'}</dd>
+      </div>
+      <div className="flex justify-between gap-3 py-0.5">
+        <dt>Sensor grade</dt>
+        <dd>{tierLabel(selection?.tier)}</dd>
+      </div>
+      <div className="flex justify-between gap-3 py-0.5">
+        <dt>Confidence</dt>
+        <dd>{bandLabel(selection?.confidenceBand)}</dd>
+      </div>
+      <div className="flex justify-between gap-3 py-0.5">
+        <dt>PM2.5 raw</dt>
+        <dd>{station.pm25 != null ? `${station.pm25} µg/m³` : '—'}</dd>
+      </div>
+      <div className="flex justify-between gap-3 py-0.5">
+        <dt>Reading age</dt>
+        <dd>{selection?.readingAgeHours != null ? `${selection.readingAgeHours}h` : '—'}</dd>
+      </div>
+    </dl>
+  )
+
   return (
-    <div className="relative overflow-hidden rounded-lg border border-border bg-surface p-3">
-      {!expanded && reading}
+    /* One height across all three states — reading, manage, confirm — so
+       tapping the three-dot or the trash never makes the card jump or shifts
+       the cards below it.
+       28 (112px) is the tallest measured state, now that caveats ride on line 2
+       and every collapsed card is 105. Manage is 112 and the confirm 110.
+       min-height rather than a fixed height, so nothing is clipped if a panel
+       grows — an error in the picker, or line 2 wrapping on a narrow screen
+       when an area carries several caveats at once. */
+    <div className="relative min-h-28 overflow-hidden rounded-lg border border-border bg-surface p-3">
+      {/* Controls sit above every layer, so the three-dot never disappears
+          under the overlay it opened. Trash to its left, and only while
+          managing — it is a destructive action and should not be one stray tap
+          away on a card someone is only reading. */}
+      <div className="absolute right-2 top-2 z-30 flex items-center gap-0.5">
+        {expanded && !confirmingDelete && (
+          <IconButton
+            label={`${retiring ? 'Retire' : 'Remove'} ${station.label}`}
+            onClick={() => setConfirmingDelete(true)}
+          >
+            <TrashIcon />
+          </IconButton>
+        )}
+        <IconButton label={`Options for ${station.label}`} onClick={onToggleExpand}>
+          <MoreIcon />
+        </IconButton>
+      </div>
+
+      {!expanded && (
+        <div
+          role="button"
+          tabIndex={0}
+          aria-expanded={detailOpen}
+          onClick={() => setDetailOpen((v) => !v)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              setDetailOpen((v) => !v)
+            }
+          }}
+        >
+          {/* Only the reading needs to clear the controls — it sits beside
+              them. The detail list below is past them, so it runs the full
+              width of the card and its rule lines up with the left edge. */}
+          <div className="pr-16">{reading}</div>
+          {detailOpen && detail}
+        </div>
+      )}
 
       {expanded && (
         <>
-          {/* The card, blacked out. Absolutely positioned so the panel in flow
-              below sets the card's height — otherwise an overlay tall enough for
-              a dropdown would be clipped by a two-line card. */}
-          <div aria-hidden className="pointer-events-none absolute inset-0 p-3 opacity-10">
+          {/* The card, blacked out to 95%. Absolutely positioned so the panel in
+              flow below sets the card's height — otherwise an overlay tall
+              enough for a dropdown would be clipped by a two-line card. */}
+          <div aria-hidden className="pointer-events-none absolute inset-0 p-3 opacity-5">
             {reading}
           </div>
 
-          <div className="relative">
+          <div className="relative pr-16">
             {confirmingDelete ? (
               <>
                 <p className="text-sm font-medium">
@@ -313,7 +414,7 @@ function AreaCard({
                     Past logged samples will not be deleted.
                   </p>
                 )}
-                <div className="mt-3 flex items-center gap-3">
+                <div className="mt-2 flex items-center gap-3">
                   <button
                     onClick={() => {
                       setConfirmingDelete(false)
@@ -333,25 +434,24 @@ function AreaCard({
               </>
             ) : (
               <>
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-medium">Replace {station.label}?</p>
-                  <IconButton
-                    label={`${retiring ? 'Retire' : 'Remove'} ${station.label}`}
-                    onClick={() => setConfirmingDelete(true)}
-                  >
-                    <TrashIcon />
-                  </IconButton>
-                </div>
-                {retiring && (
-                  <p className="mt-1 text-xs text-text-secondary">
-                    Past logged samples will not be deleted.
-                  </p>
-                )}
-                <div className="mt-2">
+                {/* No visible heading. The overlay sits inside the card you
+                    just tapped, bounded by its border, with its neighbours
+                    untouched — position already answers "which area is this?",
+                    so a heading repeating the name bought 21px of height and
+                    little else. The name is kept as the select's accessible
+                    name, so nothing is lost to a screen reader, which cannot
+                    use position as the cue.
+                    No reassurance about logged samples here either: replacing
+                    deletes nothing, it repoints the area, and every logged
+                    sample keeps the station and AQI it recorded at capture
+                    time. That line belongs on the confirmation, where
+                    something is actually removed. */}
+                <div>
                   <AreaPicker
                     id={`kawasan-${station.id}`}
                     districts={districts}
                     takenLabels={takenLabels}
+                    ariaLabel={`Replace ${station.label}`}
                     submitLabel="Replace"
                     resolveAt={resolveAt}
                     kawasanAt={kawasanAt}
@@ -363,41 +463,6 @@ function AreaCard({
                   />
                 </div>
 
-                {/* The metadata the two-line card drops. Subordinate to the
-                    decision above, but reachable — this is the only place it
-                    lives now. */}
-                {typeof station.aqi === 'number' && (
-                  <dl className="mt-3 border-t border-border pt-2 font-mono-data text-[11px] text-text-secondary">
-                    <div className="flex justify-between gap-3 py-0.5">
-                      <dt>Station</dt>
-                      <dd className="text-right">{station.stationName}</dd>
-                    </div>
-                    <div className="flex justify-between gap-3 py-0.5">
-                      <dt>UID</dt>
-                      <dd className="min-w-0 break-all text-right">{station.stationUid ?? '—'}</dd>
-                    </div>
-                    <div className="flex justify-between gap-3 py-0.5">
-                      <dt>Distance</dt>
-                      <dd>{distanceLabel(selection?.distanceKm, area?.coordinateSource) ?? '—'}</dd>
-                    </div>
-                    <div className="flex justify-between gap-3 py-0.5">
-                      <dt>Sensor grade</dt>
-                      <dd>{tierLabel(selection?.tier)}</dd>
-                    </div>
-                    <div className="flex justify-between gap-3 py-0.5">
-                      <dt>Confidence</dt>
-                      <dd>{bandLabel(selection?.confidenceBand)}</dd>
-                    </div>
-                    <div className="flex justify-between gap-3 py-0.5">
-                      <dt>PM2.5 raw</dt>
-                      <dd>{station.pm25 != null ? `${station.pm25} µg/m³` : '—'}</dd>
-                    </div>
-                    <div className="flex justify-between gap-3 py-0.5">
-                      <dt>Reading age</dt>
-                      <dd>{selection?.readingAgeHours != null ? `${selection.readingAgeHours}h` : '—'}</dd>
-                    </div>
-                  </dl>
-                )}
               </>
             )}
           </div>
@@ -745,7 +810,12 @@ export default function Home({
               >
                 <div className="h-14 w-full rounded" style={{ backgroundColor: s.averagedHex }} />
                 <div className="font-mono-data text-xs">{s.aqi ?? '—'}</div>
-                <div className="w-full truncate rounded-full bg-border px-2 py-0.5 text-[10px] text-text-secondary">
+                {/* The capsule hugs its text rather than the card. `self-start`
+                    is what does it — a flex column stretches its children by
+                    default, which is why it was spanning the full width. It
+                    still truncates at the card edge, so the cards stay one
+                    size. */}
+                <div className="max-w-full self-start truncate rounded-full bg-border px-2 py-0.5 text-[10px] text-text-secondary">
                   {s.location}
                 </div>
               </button>

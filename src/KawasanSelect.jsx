@@ -22,9 +22,13 @@ export default function KawasanSelect({
   value,
   onChange,
   id,
-  placeholder = 'Select',
+  placeholder = 'Select new area',
   locating = false,
   takenLabels = [],
+  // For the replace panel, which drops its visible heading to save height —
+  // position tells a sighted person which card they are editing, but a screen
+  // reader needs the name said out loud.
+  ariaLabel,
 }) {
   const takenSet = useMemo(() => new Set(takenLabels), [takenLabels])
 
@@ -52,6 +56,7 @@ export default function KawasanSelect({
     <div className="relative">
       <select
         id={id}
+        aria-label={ariaLabel}
         value={value}
         disabled={locating}
         onChange={(e) => onChange(e.target.value)}
@@ -63,9 +68,10 @@ export default function KawasanSelect({
           <optgroup key={kota} label={kota}>
             {list.map((d) => {
               // An area already in the list is shown but not selectable —
-              // greyed and labelled, rather than hidden. Removing it outright
-              // would leave someone hunting for a kawasan they can see on a
-              // card, with nothing explaining where it went.
+              // greyed rather than hidden. Removing it outright would leave
+              // someone hunting for a kawasan they can see on a card, with
+              // nothing explaining where it went. The greying carries that on
+              // its own; a trailing explanation only added noise to the row.
               const taken = takenSet.has(d.kecamatan)
               return (
                 <option
@@ -75,7 +81,6 @@ export default function KawasanSelect({
                   className={taken ? 'text-text-secondary' : undefined}
                 >
                   {d.kecamatan}
-                  {taken ? ' — already added' : ''}
                 </option>
               )
             })}
