@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { MAX_STATION_RADIUS_KM, CONFIDENCE_BANDS } from './constants'
+import { MAX_STATION_RADIUS_KM, CONFIDENCE_BANDS, tierLabel } from './constants'
 import { COORDINATE_SOURCE, getCurrentPosition } from './useLocations'
 
 function bandLabel(key) {
@@ -35,7 +35,7 @@ function AttachmentLine({ area }) {
   }
   return (
     <span className="font-mono-data text-xs text-text-secondary">
-      {area.stationName} · {distanceLabel(area.distanceKm, area.coordinateSource)} · Tier {area.tier} ·{' '}
+      {area.stationName} · {distanceLabel(area.distanceKm, area.coordinateSource)} · {tierLabel(area.tier)} ·{' '}
       {bandLabel(area.confidenceBand)}
     </span>
   )
@@ -279,8 +279,8 @@ function AddAreaForm({ onAdd, checkCoverage, districts, onClose }) {
         <div className="mt-2">
           {resolved.chosen ? (
             <span className="font-mono-data text-xs text-text-secondary">
-              {resolved.stationName} · {distanceLabel(resolved.distanceKm, resolved.source)} · Tier{' '}
-              {resolved.tier} · {bandLabel(resolved.confidenceBand)}
+              {resolved.stationName} · {distanceLabel(resolved.distanceKm, resolved.source)} ·{' '}
+              {tierLabel(resolved.tier)} · {bandLabel(resolved.confidenceBand)}
             </span>
           ) : (
             <span className="text-xs text-zone-moderate">
@@ -329,7 +329,7 @@ export default function LocationsView({ locationsApi, aqi, stationsApi, log, onB
   function handleRemove(area, sampleCount) {
     const message =
       sampleCount > 0
-        ? `Retire ${area.label}? Its ${sampleCount} logged sample${sampleCount === 1 ? '' : 's'} stay in the log.`
+        ? `Retire ${area.label}? Past logged samples will not be deleted.`
         : `Remove ${area.label}?`
     if (window.confirm(message)) removeLocation(area.id, { hasSamples: sampleCount > 0 })
   }

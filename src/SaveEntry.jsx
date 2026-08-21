@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PROVENANCE, MAX_STATION_RADIUS_KM, CONFIDENCE_BANDS, getAqiZone } from './constants'
+import { PROVENANCE, MAX_STATION_RADIUS_KM, CONFIDENCE_BANDS, getAqiZone, tierLabel } from './constants'
 import { formatDate, formatTime } from './time'
 
 function bandLabel(key) {
@@ -245,7 +245,7 @@ export default function SaveEntry({ draft, aqiStations, locations, demo, snapsho
               </div>
               {manualAqiInput === '' && activeSelection?.distanceKm != null && (
                 <div className="mt-0.5 font-mono-data text-xs text-text-secondary">
-                  {activeSelection.distanceKm}km · Tier {activeSelection.tier} ·{' '}
+                  {activeSelection.distanceKm}km · {tierLabel(activeSelection.tier)} ·{' '}
                   {bandLabel(activeSelection.confidenceBand)}
                 </div>
               )}

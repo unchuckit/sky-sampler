@@ -710,8 +710,13 @@ export default function Home({
 
       <div className="fixed inset-x-0 bottom-0 border-t border-border bg-bg p-4">
         {!hasLocations ? (
+          // Opens the same in-card picker as "+ Add area" above. It used to
+          // route to the Locations screen, which meant the very first thing a
+          // new person saw was a different add flow from the one they would use
+          // ever after — and one still carrying the suppressible window.confirm
+          // that made its trash button look broken.
           <button
-            onClick={onOpenLocations}
+            onClick={() => setAddingArea(true)}
             className="w-full rounded-lg border border-border py-4 text-base font-semibold text-text"
           >
             Add a sampling area
