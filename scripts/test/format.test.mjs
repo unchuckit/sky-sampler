@@ -17,24 +17,44 @@ describe('date display', () => {
     assert.equal(formatDate(local(2026, 8, 12)), '12 Aug 2026')
   })
 
-  test('the day is not zero-padded, the time is', () => {
+  test('the day is not zero-padded', () => {
     assert.equal(formatDate(local(2026, 1, 5)), '5 Jan 2026')
-    assert.equal(formatTime(local(2026, 1, 5, 9, 7)), '09:07')
   })
 
-  test('time is 24-hour, matching WIB convention', () => {
-    assert.equal(formatTime(local(2026, 8, 12, 15, 20)), '15:20')
-    assert.equal(formatTime(local(2026, 8, 12, 0, 0)), '00:00')
-    assert.equal(formatTime(local(2026, 8, 12, 23, 59)), '23:59')
+  test('time is 12-hour with a meridiem', () => {
+    assert.equal(formatTime(local(2026, 8, 12, 15, 20)), '3:20 PM')
+    assert.equal(formatTime(local(2026, 8, 12, 8, 5)), '8:05 AM')
+    assert.equal(formatTime(local(2026, 8, 12, 23, 59)), '11:59 PM')
+  })
+
+  // "9:07 AM", not "09:07 AM" — the hour never carries a leading zero, which is
+  // why this is formatted by hand rather than via toLocaleTimeString.
+  test('a single-digit hour is not padded, but the minute always is', () => {
+    assert.equal(formatTime(local(2026, 1, 5, 9, 7)), '9:07 AM')
+    assert.equal(formatTime(local(2026, 1, 5, 1, 0)), '1:00 AM')
+    assert.equal(formatTime(local(2026, 1, 5, 13, 4)), '1:04 PM')
+  })
+
+  // Both are hour 12, and getting either wrong shows "0:00" on a card.
+  test('midnight and noon both read as 12', () => {
+    assert.equal(formatTime(local(2026, 8, 12, 0, 0)), '12:00 AM')
+    assert.equal(formatTime(local(2026, 8, 12, 0, 30)), '12:30 AM')
+    assert.equal(formatTime(local(2026, 8, 12, 12, 0)), '12:00 PM')
+    assert.equal(formatTime(local(2026, 8, 12, 12, 45)), '12:45 PM')
+  })
+
+  test('the AM/PM boundary flips at 12:00, not 13:00', () => {
+    assert.equal(formatTime(local(2026, 8, 12, 11, 59)), '11:59 AM')
+    assert.equal(formatTime(local(2026, 8, 12, 12, 1)), '12:01 PM')
   })
 
   test('combined form matches the specified shape', () => {
-    assert.equal(formatDateTime(local(2026, 8, 12, 15, 20)), '12 Aug 2026, 15:20')
+    assert.equal(formatDateTime(local(2026, 8, 12, 15, 20)), '12 Aug 2026, 3:20 PM')
   })
 
   test('accepts an ISO string as well as a Date', () => {
     const iso = local(2026, 8, 12, 15, 20).toISOString()
-    assert.equal(formatDateTime(iso), '12 Aug 2026, 15:20')
+    assert.equal(formatDateTime(iso), '12 Aug 2026, 3:20 PM')
   })
 
   test('every month renders as three letters', () => {

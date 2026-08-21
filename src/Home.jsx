@@ -7,6 +7,7 @@ import {
   ATTRIBUTION,
 } from './constants'
 import { ORIENTATION_STATE } from './useOrientation'
+import { formatTime } from './time'
 import { DemoSettingsRow } from './DemoPill'
 import Toggle from './Toggle'
 import KawasanSelect, { findDistrict } from './KawasanSelect'
@@ -380,7 +381,7 @@ export default function Home({
           </div>
           <div className="text-right">
             <div className="font-mono-data text-xs text-text-secondary">
-              {displayNow.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {formatTime(displayNow)}
             </div>
             <div className={`text-xs ${ideal ? 'text-zone-good' : 'text-text-secondary'}`}>
               {ideal ? 'Ideal capture window' : nextIdealWindowLabel(displayNow)}

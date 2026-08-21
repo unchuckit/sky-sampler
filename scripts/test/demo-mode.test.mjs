@@ -21,9 +21,15 @@ import {
   TIERS,
 } from '../../src/constants.js'
 
-// A fixed "today" so the suite does not depend on the day it runs on. The demo
-// clock only ever sets hours/minutes, so any date works.
-const TODAY = new Date('2026-08-20T00:00:00+07:00')
+// A fixed "today" so the suite does not depend on the day it runs on.
+//
+// Built from LOCAL components on purpose. demoClockFor sets hours via
+// setHours, which is local, so a base pinned to an explicit offset — say
+// '2026-08-20T00:00:00+07:00' — is the previous day's evening anywhere west of
+// Jakarta, and setHours then lands the clock on the wrong date entirely. That
+// is the same timezone ambiguity src/time.js exists to stop, and it passes in
+// Jakarta while failing in UTC, which is what CI runs.
+const TODAY = new Date(2026, 7, 20)
 const clockFor = (zoneKey) => demoClockFor(zoneKey, TODAY)
 
 function setFor(zoneKey) {
@@ -260,8 +266,11 @@ describe('demo seeded log', () => {
   test('no seeded sample is stamped in the future relative to its zone clock', () => {
     for (const sample of DEMO_SAMPLES) {
       const zoneKey = DEMO_ZONE_ORDER.find((k) => getSampleZone(DEMO_ZONES[k].aqi)?.key === getSampleZone(sample.aqi)?.key)
+      // Against the real current day, because that is the base demoData itself
+      // stamps with. Comparing to the suite's fixed TODAY would drift out of
+      // step the moment the date rolls over.
       assert.ok(
-        new Date(sample.createdAt).getTime() <= clockFor(zoneKey).getTime(),
+        new Date(sample.createdAt).getTime() <= demoClockFor(zoneKey).getTime(),
         `${sample.id} is stamped after its zone's clock`,
       )
     }
