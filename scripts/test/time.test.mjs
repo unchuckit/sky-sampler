@@ -38,7 +38,7 @@ describe('Jakarta timestamp handling', () => {
 describe('freshness gate is independent of the reader timezone', () => {
   // The bug this guards: source timestamps carry no offset, so parsing them as
   // the reader's local time skews every age by the reader's UTC offset. In CI
-  // (UTC) that skew is 7 hours, which is more than the entire 3-hour gate.
+  // (UTC) that skew is 7 hours, which alone exceeds the entire 6-hour wall.
   const stamp = '2026-08-20T10:30:00' // Jakarta local
   const nowUtc = new Date('2026-08-20T04:00:00Z') // == 11:00 Jakarta, so 30 min later
 

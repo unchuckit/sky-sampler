@@ -1,4 +1,4 @@
-import { PROVENANCE, TIERS } from './constants.js'
+import { PROVENANCE, TIERS, RECENCY_PENALTY_AFTER_HOURS } from './constants.js'
 
 // Which samples deserve a second look.
 //
@@ -74,4 +74,47 @@ export function sampleFlags(sample) {
   }
 
   return flags
+}
+
+// ---------------------------------------------------------------------------
+// Live area cards
+// ---------------------------------------------------------------------------
+// The same rule applied to the Home screen's area cards. Those show a live
+// reading rather than a stored sample, so the inputs differ, but the principle
+// does not: a card announcing "Tier A · High confidence" on every render is
+// announcing the normal case.
+//
+// The three checks are deliberately independent rather than collapsed into one
+// judgement. A nearby low-cost sensor is a different caveat from a distant
+// reference one, and hiding the tier just because the distance happens to be
+// fine would drop a fact the reader needs.
+
+/** "Updated 4 hours ago" — whole hours, since the precision is not the point. */
+export function recencyNote(readingAgeHours) {
+  if (typeof readingAgeHours !== 'number' || Number.isNaN(readingAgeHours)) return null
+  if (readingAgeHours < RECENCY_PENALTY_AFTER_HOURS) return null
+  const hours = Math.round(readingAgeHours)
+  return `Updated ${hours} hour${hours === 1 ? '' : 's'} ago`
+}
+
+/**
+ * Notes for one area card's current reading, in the order confidence · tier ·
+ * recency. Empty when everything is normal, which is most of the time.
+ *
+ * @param selection a stationSelection record
+ * @returns {string[]}
+ */
+export function areaNotes(selection) {
+  if (!selection) return []
+  const notes = []
+
+  const band = selection.confidenceBand
+  if (band && CONFIDENCE_LABELS[band]) notes.push(CONFIDENCE_LABELS[band])
+
+  if (selection.tier === TIERS.B) notes.push('Low-cost sensor')
+
+  const recency = recencyNote(selection.readingAgeHours)
+  if (recency) notes.push(recency)
+
+  return notes
 }

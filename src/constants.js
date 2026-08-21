@@ -97,19 +97,31 @@ export const TIERS = {
 // Never widen this radius to make a location "work".
 export const MAX_STATION_RADIUS_KM = 15
 
-// 3 hours, not 2. LCS stations report systematically later than DKI stations —
-// in live fetches the DKI units are stamped at the page update time while LCS
-// units sit around 2 hours behind. Kemang's nearest station is LCS-06 Taman
-// Telur at exactly 2 hours stale, so a 2-hour gate would leave it permanently on
-// the boundary, intermittently failing and silently falling back to a further
-// station. That is the same class of silent-provenance failure this project has
-// already been through once.
+// The outer wall on age, for a single station's reading AND for the snapshot as
+// a whole. Deliberately one constant rather than two equal numbers: they answer
+// different questions — "is this reading too old to use?" and "is the whole file
+// too old to trust?" — but there is no reason for them to ever diverge, and two
+// hardcoded 6s would drift the first time one was tuned.
 //
-// If the snapshot workflow is switched to hourly (the private-repo path in
-// .github/workflows/snapshot.yml), widen this to 4: an LCS reading can already
-// be 2h old when the snapshot is taken, plus up to another hour before the next
-// one lands, which sits exactly on a 3-hour gate.
-export const MAX_READING_AGE_HOURS = 3
+// WHY TIME KEEPS A HARD WALL WHEN DISTANCE DOES NOT. Distance degrades
+// gracefully: a station 8km away still describes broadly similar air, so it is
+// penalised by scoring rather than excluded. Time does not behave that way.
+// PM2.5 shifts sharply within hours on rain, wind, or traffic, so an old reading
+// may describe conditions that no longer exist at all — not a slightly-off
+// version of the current ones. Past this point there is nothing to weight.
+export const MAX_READING_AGE_HOURS = 6
+
+// Below this, a reading counts as current and costs nothing. Between this and
+// MAX_READING_AGE_HOURS it is usable but penalised — see RECENCY_MULTIPLIERS.
+//
+// This used to be a hard gate at 3 hours, and that was the bug. LCS stations
+// report systematically later than DKI ones — in live fetches the DKI units are
+// stamped at the page update time while LCS units sit around 2 hours behind.
+// Kemang's nearest station, LCS-06 Taman Telur, therefore sits right on the
+// boundary and drifts across it with snapshot timing: at 2.9h it was chosen, at
+// 3.1h it vanished entirely and the area silently fell back to a worse station.
+// "Slightly stale" is not "unusable", and a cliff was the wrong shape for it.
+export const RECENCY_PENALTY_AFTER_HOURS = 3
 
 // Multiplicative, not additive: tier uncertainty compounds with distance. A
 // Tier C sensor 500m away is still describing your air; a Tier C sensor 12km
@@ -117,6 +129,18 @@ export const MAX_READING_AGE_HOURS = 3
 export const TIER_MULTIPLIERS = { [TIERS.A]: 1.0, [TIERS.B]: 1.3, [TIERS.C]: 2.0 }
 export const SUSPECT_MULTIPLIER = 2.0
 export const CLEAN_MULTIPLIER = 1.0
+
+// Recency, as a fourth multiplicative term rather than a pass/fail gate. It
+// penalises without excluding, exactly like SUSPECT_MULTIPLIER.
+//
+// THESE ARE THE ONLY TWO VALUES IT EVER TAKES. Exclusion is NOT expressed here
+// and must not be: lower score wins, so a multiplier of 0 would give a
+// nine-hour-old station a score of 0 and make it beat every fresh candidate
+// automatically — the exact inverse of the intent. Anything past
+// MAX_READING_AGE_HOURS is filtered out before scoring runs, alongside the
+// radius gate. See selectStation.
+export const RECENCY_MULTIPLIER_FRESH = 1.0
+export const RECENCY_MULTIPLIER_STALE = 2.0
 
 // Neighbour-median deviation. This was inert in V2.1, which only ever had one
 // live station to compare; with ~97 simultaneous readings it does real work.
@@ -221,11 +245,13 @@ export function nextIdealWindowLabel(date = new Date()) {
 }
 
 // Snapshot staleness — the second clock, independent of per-station freshness.
-// Routine staleness is never shown; only the far end matters. Past 6 hours,
-// treat the data as unavailable rather than serving a many-hours-old reading
-// as though it were current — area cards show "No current reading" instead of
-// a number, and captures still save, with provenance 'no-coverage'.
-export const SNAPSHOT_UNUSABLE_HOURS = 6
+// Routine staleness is never shown; only the far end matters. Past the shared
+// age wall, treat the data as unavailable rather than serving a many-hours-old
+// reading as though it were current — area cards show "No current reading"
+// instead of a number, and captures still save, with provenance 'no-coverage'.
+//
+// Intentionally an alias, not a second literal: see MAX_READING_AGE_HOURS.
+export const SNAPSHOT_UNUSABLE_HOURS = MAX_READING_AGE_HOURS
 
 // Instrument ceilings. A station reporting exactly one of these is far more
 // likely to be pinned at its range limit than to be measuring that value, so it

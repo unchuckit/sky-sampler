@@ -112,7 +112,11 @@ describe('stress tests — station selection', () => {
     assert.equal(selection.rejected[0].reason, REJECTION_REASONS.OUT_OF_RADIUS)
   })
 
-  test('a 2km station with a 5-hour-old reading is skipped for the next passing candidate', () => {
+  // Recency is a penalty inside the 6h wall, not a cliff at 3h. A 5-hour-old
+  // reading 2km away scores 2 × 1.0 × 1.0 × 2.0 = 4.0, which still beats a fresh
+  // Tier B at 6km (6 × 1.3 = 7.8) — close-but-stale over far-but-fresh. See
+  // recency.test.mjs for the full matrix.
+  test('a 2km station with a 5-hour-old reading is penalised, not excluded', () => {
     const stale = stationAtKm(2, {
       uid: 1,
       name: 'near-but-stale',
@@ -121,16 +125,31 @@ describe('stress tests — station selection', () => {
     })
     const fresh = stationAtKm(6, { uid: 2, name: 'further-but-fresh', tier: TIERS.B })
     const { chosen, selection } = selectStation(LOCATION, [stale, fresh], NOW)
+    assert.equal(chosen.uid, 1)
+    assert.equal(selection.readingAgeHours, 5)
+    // Doubling its score is what the penalty means, and it is still the winner.
+    assert.equal(selection.rejected.find((r) => r.uid === 2).reason, REJECTION_REASONS.LOWER_SCORE)
+  })
+
+  test('past the 6-hour wall a near station is excluded outright', () => {
+    const tooOld = stationAtKm(2, {
+      uid: 1,
+      name: 'past-the-wall',
+      tier: TIERS.A,
+      lastSeen: new Date(NOW.getTime() - 7 * 60 * 60 * 1000).toISOString(),
+    })
+    const fresh = stationAtKm(6, { uid: 2, name: 'further-but-fresh', tier: TIERS.B })
+    const { chosen, selection } = selectStation(LOCATION, [tooOld, fresh], NOW)
     assert.equal(chosen.uid, 2)
     assert.equal(selection.rejected.find((r) => r.uid === 1).reason, REJECTION_REASONS.STALE)
   })
 
-  test('all candidates stale yields no AQI', () => {
+  test('all candidates past the wall yields no AQI', () => {
     const old = (uid, km) =>
       stationAtKm(km, {
         uid,
         name: `stale-${uid}`,
-        lastSeen: new Date(NOW.getTime() - 6 * 60 * 60 * 1000).toISOString(),
+        lastSeen: new Date(NOW.getTime() - 7 * 60 * 60 * 1000).toISOString(),
       })
     const { chosen, selection } = selectStation(LOCATION, [old(1, 2), old(2, 5)], NOW)
     assert.equal(chosen, null)

@@ -96,8 +96,8 @@ describe('frozen demo station set', () => {
     assert.ok(tiers.includes(TIERS.B), 'no Tier B station')
   })
 
-  // The real reporting pattern is the reason MAX_READING_AGE_HOURS is 3 rather
-  // than 2. A demo that flattened it would never exercise that gate.
+  // The real reporting pattern is what makes the recency term meaningful.
+  // A demo that flattened it would never exercise the penalty.
   test('LCS units keep their real lag behind the DKI units', () => {
     const lcs = DEMO_STATION_ROWS.filter((r) => r.name.startsWith('LCS-'))
     const other = DEMO_STATION_ROWS.filter((r) => !r.name.startsWith('LCS-'))

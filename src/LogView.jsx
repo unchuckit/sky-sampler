@@ -168,6 +168,25 @@ function bandLabel(key) {
   return CONFIDENCE_BANDS.find((b) => b.key === key)?.label ?? 'Unknown confidence'
 }
 
+/**
+ * How old the station's reading was at the moment the sample was captured.
+ *
+ * Computed from `apiTimestamp` (when the station reported) and `createdAt`
+ * (when the photo was taken) rather than stored separately — both are already
+ * on every record, so deriving keeps them from disagreeing and makes the field
+ * work for samples logged before it existed.
+ */
+function readingAgeLabel(sample) {
+  if (!sample?.apiTimestamp || !sample?.createdAt) return '—'
+  const reported = new Date(sample.apiTimestamp).getTime()
+  const captured = new Date(sample.createdAt).getTime()
+  if (Number.isNaN(reported) || Number.isNaN(captured)) return '—'
+  const hours = (captured - reported) / 3_600_000
+  if (hours < 0) return '—'
+  if (hours < 1) return `${Math.max(0, Math.round(hours * 60))} min old`
+  return `${Math.round(hours)}h old`
+}
+
 /** One label/value row in the expanded card. */
 function DetailRow({ label, children, mono = true }) {
   return (
@@ -229,6 +248,12 @@ function SampleDetail({ sample, display }) {
       <DetailRow label="Snapshot age at capture">
         {sample.snapshotAgeMinutes != null ? `${sample.snapshotAgeMinutes} min` : '—'}
       </DetailRow>
+      {/* Derived from the two timestamps already on the record rather than
+          stored a third time, so it cannot drift out of step with them — and so
+          it works for samples logged before this field existed. Always shown:
+          expanded is where full provenance lives whether or not it is
+          noteworthy. */}
+      <DetailRow label="AQI reading age">{readingAgeLabel(sample)}</DetailRow>
       {sample.apiTimestamp && (
         <DetailRow label="Station reading">{formatDateTime(sample.apiTimestamp)}</DetailRow>
       )}
@@ -371,20 +396,26 @@ function SwipeRow({
 
   return (
     <div className="relative overflow-hidden rounded-lg border border-border">
-      <div className="absolute inset-y-0 right-0 flex w-[88px] items-center justify-center bg-zone-unhealthy">
-        <button
-          onClick={() => {
-            if (window.confirm('Delete this sample? This cannot be undone.')) {
-              onDelete(sample.id)
-            } else {
-              setDragX(0)
-            }
-          }}
-          className="px-4 text-sm font-medium text-white"
-        >
-          Delete
-        </button>
-      </div>
+      {/* Rendered only while the row is actually swiped. Kept mounted at rest it
+          sat behind the card and bled a red sliver along the bottom-right edge
+          wherever the content's height rounded to a fraction of a pixel — which
+          read as a stray orange outline on a card nobody had touched. */}
+      {dragX < 0 && (
+        <div className="absolute inset-y-0 right-0 flex w-[88px] items-center justify-center bg-zone-unhealthy">
+          <button
+            onClick={() => {
+              if (window.confirm('Delete this sample? This cannot be undone.')) {
+                onDelete(sample.id)
+              } else {
+                setDragX(0)
+              }
+            }}
+            className="px-4 text-sm font-medium text-white"
+          >
+            Delete
+          </button>
+        </div>
+      )}
       <div
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}

@@ -16,9 +16,9 @@
 // What IS carried over is each station's LAG: how far behind the snapshot's
 // own update time its reading was. Replaying that lag against the demo clock
 // reproduces the real reporting pattern — DKI units at or near the update
-// time, LCS units about two hours behind — which is the whole reason
-// MAX_READING_AGE_HOURS is 3 rather than 2. A demo that flattened the lag
-// would never exercise the gate it is meant to demonstrate.
+// time, LCS units about two hours behind — which is the whole reason recency is
+// scored rather than gated. A demo that flattened the lag would never exercise
+// the penalty it is meant to demonstrate.
 //
 // Usage: node scripts/gen-demo-stations.mjs [--in path] [--out path]
 

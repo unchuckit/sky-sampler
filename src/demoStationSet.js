@@ -53,8 +53,9 @@ export function syntheticPm25(uid, zoneKey, zoneAqi) {
  *
  * Each station's reading time replays its own real lag behind the source's
  * update time — DKI units at or near it, LCS units about two hours back. That
- * pattern is the reason MAX_READING_AGE_HOURS is 3 rather than 2, so preserving
- * it is what lets the freshness gate do real work on stage.
+ * pattern is why recency is scored at all: LCS units land in the 2-3h band
+ * where the penalty starts to bite, so preserving it lets the recency term do
+ * real work on stage instead of every station looking equally current.
  *
  * @param {string} zoneKey
  * @param {number} zoneAqi nominal AQI for the zone

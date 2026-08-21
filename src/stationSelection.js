@@ -5,6 +5,9 @@
 import {
   MAX_STATION_RADIUS_KM,
   MAX_READING_AGE_HOURS,
+  RECENCY_PENALTY_AFTER_HOURS,
+  RECENCY_MULTIPLIER_FRESH,
+  RECENCY_MULTIPLIER_STALE,
   TIER_MULTIPLIERS,
   SUSPECT_MULTIPLIER,
   CLEAN_MULTIPLIER,
@@ -99,10 +102,28 @@ export function readingAgeHours(station, now = new Date()) {
   return (now.getTime() - t.getTime()) / (1000 * 60 * 60)
 }
 
-export function scoreFor(distanceKm, tier, suspect) {
+/**
+ * How much a reading's age counts against it.
+ *
+ * Only ever 1.0 or 2.0. Exclusion lives in the filter, never here — a 0 would
+ * make the stalest station score lowest and therefore win. See
+ * RECENCY_MULTIPLIER_* in constants.js.
+ */
+export function recencyMultiplierFor(ageHours) {
+  return ageHours >= RECENCY_PENALTY_AFTER_HOURS ? RECENCY_MULTIPLIER_STALE : RECENCY_MULTIPLIER_FRESH
+}
+
+/**
+ * Multiplicative across all four terms, because the uncertainties compound: a
+ * Tier B sensor that is also 4 hours old is worse than either fact alone.
+ *
+ * `ageHours` defaults to 0 so a caller that has already gated on freshness and
+ * only cares about distance/tier/suspect gets the pre-recency behaviour.
+ */
+export function scoreFor(distanceKm, tier, suspect, ageHours = 0) {
   const tierMultiplier = TIER_MULTIPLIERS[tier] ?? TIER_MULTIPLIERS[TIERS.C]
   const suspectMultiplier = suspect ? SUSPECT_MULTIPLIER : CLEAN_MULTIPLIER
-  return distanceKm * tierMultiplier * suspectMultiplier
+  return distanceKm * tierMultiplier * suspectMultiplier * recencyMultiplierFor(ageHours)
 }
 
 /**
@@ -138,16 +159,27 @@ export function selectStation(location, stations, now = new Date()) {
       }
       continue
     }
-    if (readingAgeHours(station, now) > MAX_READING_AGE_HOURS) {
+    // STEP 1 — FILTER. Radius above, age here. Both are absolute: a station
+    // that fails either is not a candidate and never reaches scoring, so it
+    // cannot win on a favourable score.
+    const ageHours = readingAgeHours(station, now)
+    if (ageHours > MAX_READING_AGE_HOURS) {
       rejected.push({
         uid: station.uid,
         name: station.name,
         reason: REJECTION_REASONS.STALE,
         distanceKm: round1(distanceKm),
+        readingAgeHours: Number.isFinite(ageHours) ? round1(ageHours) : null,
       })
       continue
     }
-    candidates.push({ station, distanceKm, score: scoreFor(distanceKm, station.tier, station.suspect) })
+    // STEP 2 — SCORE, survivors only.
+    candidates.push({
+      station,
+      distanceKm,
+      ageHours,
+      score: scoreFor(distanceKm, station.tier, station.suspect, ageHours),
+    })
   }
 
   if (candidates.length === 0) {
@@ -159,6 +191,7 @@ export function selectStation(location, stations, now = new Date()) {
         tier: null,
         distanceKm: null,
         confidenceBand: null,
+        readingAgeHours: null,
         neighbourDeviation: null,
         suspect: null,
         rejected: trimRejected(rejected),
@@ -192,6 +225,9 @@ export function selectStation(location, stations, now = new Date()) {
       tier: winner.station.tier,
       distanceKm: round1(winner.distanceKm),
       confidenceBand: confidenceBandFor(winner.distanceKm),
+      // How old the chosen reading was at selection time. Recorded because
+      // "which station" and "how current it was" are separate provenance facts.
+      readingAgeHours: Number.isFinite(winner.ageHours) ? round1(winner.ageHours) : null,
       neighbourDeviation:
         winner.station.neighbourDeviation == null ? null : round1(winner.station.neighbourDeviation),
       suspect: Boolean(winner.station.suspect),

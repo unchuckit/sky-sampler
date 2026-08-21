@@ -13,6 +13,8 @@ import Toggle from './Toggle'
 import KawasanSelect, { findDistrict, districtKey, USE_MY_LOCATION } from './KawasanSelect'
 import { COORDINATE_SOURCE, getCurrentPosition } from './useLocations'
 import { haversineKm } from './stationSelection'
+import { stationDisplayName } from './stations'
+import { areaNotes } from './sampleFlags'
 
 function bandLabel(key) {
   return CONFIDENCE_BANDS.find((b) => b.key === key)?.label ?? 'Unknown confidence'
@@ -208,9 +210,11 @@ function AreaCard({
   }, [expanded])
 
   const retiring = sampleCount > 0
+  const selection = station.stationSelection ?? null
+  const notes = areaNotes(selection)
 
   return (
-    <div className="rounded-lg border border-border bg-surface p-3">
+    <div className="relative rounded-lg border border-border bg-surface p-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           {expanded ? (
@@ -250,25 +254,32 @@ function AreaCard({
           suppressible — browsers offer "prevent additional dialogs", and some
           embedded and standalone-PWA contexts refuse it outright — and when it
           is suppressed it returns false, so the button silently does nothing and
-          reads as broken. */}
+          reads as broken.
+
+          It covers the card it belongs to at near-full opacity, so the decision
+          is the only thing to attend to and it is unambiguous which area is
+          about to go. */}
       {expanded && confirmingDelete && (
-        <div className="mt-2 rounded-lg border border-border bg-bg p-2.5">
-          <p className="text-xs">
-            {retiring
-              ? `Retire ${station.label}? Its ${sampleCount} logged sample${sampleCount === 1 ? '' : 's'} stay in the log.`
-              : `Remove ${station.label}?`}
+        <div className="absolute inset-0 z-10 flex flex-col justify-center rounded-lg bg-surface/90 p-4 backdrop-blur-[2px]">
+          <p className="text-sm font-medium">
+            {retiring ? `Retire ${station.label}?` : `Remove ${station.label}?`}
           </p>
-          <div className="mt-2 flex items-center gap-3">
+          {retiring && (
+            <p className="mt-1 text-xs text-text-secondary">
+              Its {sampleCount} logged sample{sampleCount === 1 ? ' stays' : 's stay'} in the log.
+            </p>
+          )}
+          <div className="mt-3 flex items-center gap-3">
             <button
               onClick={() => {
                 setConfirmingDelete(false)
                 onDelete(area, sampleCount)
               }}
-              className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold"
+              className="rounded-lg bg-zone-unhealthy px-4 py-2 text-sm font-semibold text-white"
             >
               {retiring ? 'Retire' : 'Remove'}
             </button>
-            <button onClick={() => setConfirmingDelete(false)} className="text-xs text-text-secondary">
+            <button onClick={() => setConfirmingDelete(false)} className="text-sm text-text-secondary">
               Cancel
             </button>
           </div>
@@ -286,17 +297,27 @@ function AreaCard({
             <AqiPill zone={station.zone} aqi={station.aqi} />
           </div>
 
+          {/* Line 2: who is reporting, and how far away. The raw µg/m³ is gone
+              from this view — the AQI directly above is computed from it, so
+              showing both was showing one number twice. The machine prefix is
+              stripped; it lives in the detail panel with the UID. */}
           {typeof station.aqi === 'number' && (
             <div className="mt-0.5 text-xs text-text-secondary">
-              {station.stationName ?? 'Unknown station'}
-              {station.pm25 != null && <span className="font-mono-data"> · {station.pm25} µg/m³</span>}
+              {stationDisplayName(station.stationName)}
+              {station.stationSelection?.distanceKm != null && (
+                <span className="font-mono-data">
+                  {' · '}
+                  {distanceLabel(station.stationSelection.distanceKm, area?.coordinateSource)}
+                </span>
+              )}
             </div>
           )}
-          {typeof station.aqi === 'number' && station.stationSelection?.distanceKm != null && (
-            <div className="mt-0.5 font-mono-data text-[11px] text-text-secondary">
-              {distanceLabel(station.stationSelection.distanceKm, area?.coordinateSource)} · Tier{' '}
-              {station.stationSelection.tier} · {bandLabel(station.stationSelection.confidenceBand)}
-            </div>
+
+          {/* Line 3: only when something is worth noting. Confidence, tier and
+              recency are checked independently and joined with a middot, so the
+              card gains one line whether one caveat applies or all three. */}
+          {typeof station.aqi === 'number' && notes.length > 0 && (
+            <div className="mt-0.5 text-[11px] text-zone-moderate">{notes.join(' · ')}</div>
           )}
           {station.noCoverage && (
             <div className="mt-1 text-xs text-zone-moderate">
@@ -306,6 +327,43 @@ function AreaCard({
         </>
       )}
 
+      {/* The full station metadata the two-line view drops. It lives behind the
+          same three-dot the management controls do, so nothing is lost — only
+          moved out of the glance. */}
+      {expanded && typeof station.aqi === 'number' && (
+        <dl className="mt-3 border-t border-border pt-2 font-mono-data text-[11px] text-text-secondary">
+          <div className="flex justify-between gap-3 py-0.5">
+            <dt>Station</dt>
+            <dd className="text-right">{station.stationName}</dd>
+          </div>
+          <div className="flex justify-between gap-3 py-0.5">
+            <dt>UID</dt>
+            <dd className="min-w-0 break-all text-right">{station.stationUid ?? '—'}</dd>
+          </div>
+          <div className="flex justify-between gap-3 py-0.5">
+            <dt>Distance</dt>
+            <dd>{distanceLabel(selection?.distanceKm, area?.coordinateSource) ?? '—'}</dd>
+          </div>
+          <div className="flex justify-between gap-3 py-0.5">
+            <dt>Tier</dt>
+            <dd>{selection?.tier ?? '—'}</dd>
+          </div>
+          <div className="flex justify-between gap-3 py-0.5">
+            <dt>Confidence</dt>
+            <dd>{bandLabel(selection?.confidenceBand)}</dd>
+          </div>
+          <div className="flex justify-between gap-3 py-0.5">
+            <dt>PM2.5 raw</dt>
+            <dd>{station.pm25 != null ? `${station.pm25} µg/m³` : '—'}</dd>
+          </div>
+          <div className="flex justify-between gap-3 py-0.5">
+            <dt>Reading age</dt>
+            <dd>
+              {selection?.readingAgeHours != null ? `${selection.readingAgeHours}h` : '—'}
+            </dd>
+          </div>
+        </dl>
+      )}
     </div>
   )
 }

@@ -7,11 +7,11 @@ name: Snapshot air quality and deploy
 # this is free. On a PRIVATE repository the free allowance is 2,000 minutes/month
 # and this schedule will exceed it.
 #
-# If this repo must stay private, change the cron below to hourly ('7 * * * *')
-# AND widen MAX_READING_AGE_HOURS in src/constants.js from 3 to 4. Both changes
-# are needed together: LCS stations already report up to 2h late, and an hourly
-# snapshot adds up to another hour on top, which lands exactly on a 3h gate and
-# would make Kemang fail intermittently.
+# If this repo must stay private, change the cron below to hourly ('7 * * * *').
+# No constant needs changing to go with it any more: reading age is scored
+# rather than gated at 3 hours, so the extra delay costs a borderline station a
+# score penalty instead of dropping it out entirely. The hard wall is
+# MAX_READING_AGE_HOURS (6h) and an hourly snapshot stays well inside it.
 #
 # Offset from the top of the hour on purpose — GitHub's scheduled runners are
 # heavily contended at :00 and delays there are common.
